@@ -1,4 +1,4 @@
-# SAE S3 2025 — Connexion UPHF
+# SAE S3 2025 
 
 ## Organisation Git
 
