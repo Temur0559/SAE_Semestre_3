@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Model/PasswordModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/PasswordModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/HelpPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/HelpPresenter.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/PasswordPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/PasswordPresenter.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Style.css" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/login.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/login.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/premiere_connexion.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/premiere_connexion.php" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ComposerSettings">
+    <execution />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="PHP File" />
+        <option value="CSS File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="sprint/sprint-1" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Temur0559"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Temur0559/SAE_Semestre_3.git",
+    "accountId": "da52056c-3728-4966-9cff-76277862ba96"
+  }
+}]]></component>
+  <component name="PhpWorkspaceProjectConfiguration" interpreter_name="/bin/php" />
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="332zvlFjsz5pXJOyD26IQ7KsRZt" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "PHP Script.index.php.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "sprint/sprint-1",
+    "last_opened_file_path": "/users/info/temur.usupovi/PhpstormProjects/untitled3",
+    "list.type.of.created.stylesheet": "CSS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-b598e85cdad2-JavaScript-PS-252.25557.128" />
+        <option value="bundled-php-predefined-a98d8de5180a-ce40d0652d34-com.jetbrains.php.sharedIndexes-PS-252.25557.128" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="" />
+      <created>1758530187613</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1758530187613</updated>
+      <workItem from="1758530188635" duration="7711000" />
+      <workItem from="1758705191958" duration="319000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
