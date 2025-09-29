@@ -1,18 +1,24 @@
 <?php
-require_once __DIR__ . "/Presenter/UserPresenter.php";
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+require_once __DIR__ . '/Presenter/AbsencePresenter.php';
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $identifiant = isset($_POST['identifiant']) ? $_POST['identifiant'] : "";
-    $password   = isset($_POST['password']) ? $_POST['password'] : "";
-
-    $presenter = new UserPresenter();
-    $presenter->handleLogin($identifiant, $password);
-} else {
-    header("Location: View/login.php");
+$presenter = new AbsencePresenter();
+$identity  = $presenter->getIdentity();
+$absences  = $presenter->getAbsences();
 
 
-
-    exit;
+function norm($s){
+    $s = strtolower($s);
+    $s = str_replace(['é','è','ê'], 'e', $s);
+    return trim($s);
 }
+$filtre = isset($_GET['filtre']) ? $_GET['filtre'] : 'tous';
+if ($filtre && norm($filtre) !== 'tous') {
+    $f = norm($filtre);
+    $absences = array_values(array_filter($absences, function($a) use ($f){
+        $st = strtolower($a['statut']);
+        $st = str_replace(['é','è','ê'], 'e', $st);
+        return $st === $f;
+    }));
+}
+
+include __DIR__ . '/View/liste.php';
