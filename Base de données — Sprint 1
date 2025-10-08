@@ -1,0 +1,169 @@
+DROP TABLE IF EXISTS HistoriqueDecision CASCADE;
+DROP TABLE IF EXISTS JustificatifAbsence CASCADE;
+DROP TABLE IF EXISTS Absence CASCADE;
+DROP TABLE IF EXISTS Cours CASCADE;
+DROP TABLE IF EXISTS Justificatif CASCADE;
+DROP TABLE IF EXISTS Motif CASCADE;
+DROP TABLE IF EXISTS Utilisateur CASCADE;
+
+DROP TYPE IF EXISTS Role CASCADE;
+DROP TYPE IF EXISTS TypeDecision CASCADE;
+
+CREATE TYPE Role AS ENUM ('ETUDIANT','ENSEIGNANT','RESPONSABLE','SECRETAIRE');
+
+CREATE TYPE TypeDecision AS ENUM(
+  'SOUMISSION',
+  'DEMANDE_PRECISIONS',
+  'RENVOI_FICHIER',
+  'ACCEPTATION',
+  'REJET',
+  'AUTORISATION_RENVOI',
+  'AUTORISATION_HORS_DELAI'
+);
+
+CREATE TABLE Utilisateur (
+  id             SERIAL PRIMARY KEY,
+  nom            TEXT NOT NULL,
+  prenom         TEXT NOT NULL,
+  email          TEXT NOT NULL UNIQUE,
+  motDePasseHash TEXT NOT NULL,
+  role           Role NOT NULL
+);
+
+CREATE TABLE Motif (
+  id      SERIAL PRIMARY KEY,
+  libelle TEXT NOT NULL,
+  actif   BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE Cours (
+  id      SERIAL PRIMARY KEY,
+  code    TEXT NOT NULL,
+  libelle TEXT NOT NULL,
+  CONSTRAINT uq_cours_code UNIQUE (code)
+);
+
+CREATE TABLE Justificatif (
+  id             SERIAL PRIMARY KEY,
+  fichier        BYTEA NOT NULL,
+  commentaire    TEXT,
+  dateSoumission TIMESTAMP NOT NULL DEFAULT NOW(),
+  dateMaj        TIMESTAMP NOT NULL DEFAULT NOW(),
+  motifLibre     TEXT,
+  id_Utilisateur INT NOT NULL REFERENCES Utilisateur(id),
+  motif_id       INT NULL REFERENCES Motif(id) ON DELETE SET NULL,
+  CONSTRAINT chk_justificatif_motif_xor CHECK (
+    (motif_id IS NOT NULL AND motifLibre IS NULL)
+    OR
+    (motif_id IS NULL AND motifLibre IS NOT NULL)
+  )
+);
+
+CREATE TABLE Absence (
+  id             SERIAL PRIMARY KEY,
+  dateDebut      DATE NOT NULL,
+  dateFin        DATE,
+  isEvaluation   BOOLEAN NOT NULL DEFAULT FALSE,
+  id_Utilisateur INT NOT NULL REFERENCES Utilisateur(id),
+  id_cours       INT NOT NULL REFERENCES Cours(id),
+  CONSTRAINT ck_absence_dates CHECK (dateFin IS NULL OR dateFin >= dateDebut)
+);
+
+CREATE TABLE JustificatifAbsence (
+  justificatif_id INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  absence_id      INT NOT NULL REFERENCES Absence(id) ON DELETE CASCADE,
+  PRIMARY KEY (justificatif_id, absence_id)
+);
+
+CREATE TABLE HistoriqueDecision (
+  id              SERIAL PRIMARY KEY,
+  action          TypeDecision NOT NULL,
+  dateAction      TIMESTAMP NOT NULL DEFAULT NOW(),
+  motifDecision   TEXT,
+  justificatif_id INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  auteur_id       INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE
+);
+
+CREATE INDEX index_absence_etudiant   ON Absence(id_Utilisateur);
+CREATE INDEX index_absence_cours      ON Absence(id_cours);
+CREATE INDEX index_justif_etudiant    ON Justificatif(id_Utilisateur);
+CREATE INDEX index_justif_motif       ON Justificatif(motif_id);
+CREATE INDEX index_hist_justificatif  ON HistoriqueDecision(justificatif_id);
+CREATE INDEX index_hist_auteur        ON HistoriqueDecision(auteur_id);
+CREATE INDEX index_ja_absence         ON JustificatifAbsence(absence_id);
+CREATE INDEX index_ja_justif          ON JustificatifAbsence(justificatif_id);
+
+-- ============================================
+-- INSERTION DES DONNÉES
+-- ============================================
+
+-- Table Utilisateur
+INSERT INTO Utilisateur (nom, prenom, email, motDePasseHash, role) VALUES
+('Chakour','Abdelwaheb','abdelwaheb.chakour@uphf.fr','hash_etudiant','ETUDIANT'),
+('Vion','Julien','julien.vion@uphf.fr','hash_responsable','RESPONSABLE'),
+('Dupont','Marie','marie.dupont@uphf.fr','hash_enseignant','ENSEIGNANT'),
+('Martin','Paul','paul.martin@uphf.fr','hash_secretaire','SECRETAIRE');
+
+-- Table Cours
+INSERT INTO Cours (code, libelle) VALUES
+('MATH101','Analyse 1'),
+('INFO201','Programmation 2'),
+('PHY301','Physique generale');
+
+-- Table Motif
+INSERT INTO Motif (libelle, actif) VALUES
+('Maladie', TRUE),
+('Convocation administrative', TRUE),
+('Transport', TRUE),
+('Autre', TRUE);
+
+-- Table Absence
+INSERT INTO Absence (dateDebut, dateFin, isEvaluation, id_Utilisateur, id_cours) VALUES
+('2025-10-02','2025-10-02', FALSE, 1, 2),
+('2025-10-03','2025-10-03', TRUE, 1, 1),
+('2025-10-05','2025-10-05', FALSE, 1, 3);
+
+-- Table Justificatif (AVEC BYTEA)
+INSERT INTO Justificatif (fichier, commentaire, dateSoumission, dateMaj, motifLibre, id_Utilisateur, motif_id)
+VALUES
+('\x89504E470D0A1A0A', 'Certificat medical pour absence du 02/10', '2025-10-02 14:30:00', '2025-10-02 14:30:00', NULL, 1, 1),
+('\x255044462D312E34', 'Convocation prefecture', '2025-10-03 09:15:00', '2025-10-03 09:15:00', NULL, 1, 2),
+('\x504B0304140000000800', 'Justificatif familial', '2025-10-05 16:45:00', '2025-10-05 16:45:00', 'Hospitalisation urgente d''un parent', 1, NULL);
+
+-- Table JustificatifAbsence
+INSERT INTO JustificatifAbsence (justificatif_id, absence_id)
+VALUES
+(1, 1),
+(2, 2),
+(3, 3);
+
+-- Table HistoriqueDecision
+INSERT INTO HistoriqueDecision (action, dateAction, motifDecision, justificatif_id, auteur_id)
+VALUES
+('SOUMISSION', '2025-10-02 14:30:00', 'Soumission initiale', 1, 1),
+('ACCEPTATION', '2025-10-02 16:00:00', 'Certificat medical valide', 1, 2),
+('SOUMISSION', '2025-10-03 09:15:00', 'Soumission initiale', 2, 1),
+('DEMANDE_PRECISIONS', '2025-10-03 10:30:00', 'Document illisible', 2, 3),
+('RENVOI_FICHIER', '2025-10-03 14:20:00', 'Nouveau document envoye', 2, 1),
+('ACCEPTATION', '2025-10-03 15:45:00', 'Document conforme', 2, 2),
+('SOUMISSION', '2025-10-05 16:45:00', 'Soumission du justificatif', 3, 1),
+('DEMANDE_PRECISIONS', '2025-10-06 09:00:00', 'Besoin d''un document officiel', 3, 4);
+
+
+
+-- Retourne 1 ligne par justificatif. Si pas d'historique: colonnes décision NULL.
+WITH last_decision AS (
+  SELECT DISTINCT ON (justificatif_id)
+         justificatif_id, action, motifDecision, dateAction, auteur_id
+  FROM HistoriqueDecision
+  ORDER BY justificatif_id, dateAction DESC, id DESC
+)
+SELECT
+  j.id AS justificatif_id,
+  ld.action,
+  ld.motifDecision,
+  ld.dateAction,
+  ld.auteur_id
+FROM Justificatif j
+LEFT JOIN last_decision ld ON ld.justificatif_id = j.id
+ORDER BY j.id;
