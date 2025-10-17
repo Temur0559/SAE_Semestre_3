@@ -84,6 +84,7 @@ button{border:none;border-radius:7px;cursor:pointer;}
 }
 
 
+
 @media (max-width: 400px){
     .status{font-size:10px;min-width:62px;padding:3px 6px;}
     .btn-insert,.btn-disabled{font-size:10px;padding:4px 6px;}

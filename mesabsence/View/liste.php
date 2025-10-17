@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Mes absences</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="../Style.css">
+    <link rel="stylesheet" href="/mesabsence/Style.css">
     <script>
         function submitFiltre(sel){ sel.form.submit(); }
     </script>
@@ -12,7 +12,6 @@
 <body class="page">
 
 <h1 class="title">Mes absences</h1>
-
 
 <div class="toolbar">
     <form action="../index.php" method="get" class="filter-form">
@@ -47,13 +46,12 @@
         <div class="program"><?= htmlspecialchars($identity['program'] ?? '') ?></div>
     </aside>
 
-
     <section class="table-wrap">
         <table class="abs-table">
             <thead>
             <tr>
                 <th>DATE</th>
-                <th>MOTIF</th>
+                <th>COURS / MOTIF</th>
                 <th>JUSTIFICATIF</th>
                 <th>STATUT</th>
                 <th>COMMENTAIRE</th>
@@ -61,7 +59,7 @@
             </tr>
             </thead>
             <tbody>
-            <?php foreach ($absences as $i => $a): ?>
+            <?php foreach ($absences as $a): ?>
                 <?php
                 $s = strtolower($a['statut']);
                 $cls = ($s === 'accepté' || $s === 'accepte') ? 'accepted'
@@ -73,16 +71,16 @@
                     <td><?= htmlspecialchars($a['date']) ?></td>
                     <td><?= htmlspecialchars($a['motif']) ?></td>
                     <td class="justif-cell">
-                        <?php if (!empty($a['justificatif'])): ?>
-                            <a href="../uploads/<?= htmlspecialchars($a['justificatif']) ?>" target="_blank" title="Voir le justificatif">📄</a>
-                        <?php else: ?>📄<?php endif; ?>
+                        <?php if (!empty($a['justificatif_id'])): ?>
+                            <a href="/mesabsence/get_justif.php?id=<?= (int)$a['justificatif_id'] ?>" target="_blank" title="Télécharger le justificatif">📄</a>
+                        <?php else: ?>—<?php endif; ?>
                     </td>
                     <td class="status <?= $cls ?>"><?= htmlspecialchars($a['statut']) ?></td>
                     <td><?= htmlspecialchars($a['commentaire'] ?? '') ?></td>
                     <td>
-                        <?php if (in_array($s, ['rejeté','rejete','en révision','en revision'])): ?>
-                            <form action="../upload.php" method="post" enctype="multipart/form-data" class="upload-form">
-                                <input type="hidden" name="id" value="<?= (int)$i ?>">
+                        <?php if (!empty($a['can_upload'])): ?>
+                            <form action="/mesabsence/upload.php" method="post" enctype="multipart/form-data" class="upload-form">
+                                <input type="hidden" name="absence_id" value="<?= (int)$a['absence_id'] ?>">
                                 <input type="file" name="justificatif" required>
                                 <button type="submit" class="btn-insert">INSÉRER</button>
                             </form>
@@ -97,9 +95,8 @@
     </section>
 </div>
 
-
 <div class="actions-bottom">
-    <form action="../save.php" method="post">
+    <form action="/mesabsence/save.php" method="post">
         <input type="hidden" name="filtre" value="<?= htmlspecialchars($filtreActuel ?? 'tous') ?>">
         <button class="btn-primary" type="submit">ENREGISTRER LES MODIFICATIONS</button>
     </form>

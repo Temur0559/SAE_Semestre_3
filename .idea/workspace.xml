@@ -5,14 +5,47 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/connexion/Presenter/require_role.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_enseignant.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_responsable.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/config/db.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/logout.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mesabsence/get_justif.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Model/PasswordModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/PasswordModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Model/HelpModel.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Model/PasswordModel.php" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/HelpPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/HelpPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/PasswordPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/PasswordPresenter.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/HelpPresenter.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/LoginPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/LoginPresenter.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/PasswordPresenter.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/RegisterPresenter.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/UserPresenter.php" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/connexion/Style.css" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/aide.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/aide.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/error.php" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/connexion/View/login.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/login.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/premiere_connexion.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/premiere_connexion.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/motdepasse_oublie.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/premiere_connexion.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/success.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/traitement.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/traitement_mdp.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/traitement_premiere.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/Presenter/AbsencePresenter.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/Style.css" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/View/liste.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/View/success.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/save.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/save.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/storage/absences.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/upload.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/upload.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759140897_Firefox_wallpaper.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759149667_Firefox_wallpaper.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759150360_Firefox_wallpaper.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759150593_Firefox_wallpaper.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,8 +58,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="PHP File" />
         <option value="CSS File" />
+        <option value="PHP File" />
       </list>
     </option>
   </component>
@@ -38,19 +71,22 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "Temur0559"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Temur0559&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Temur0559/SAE_Semestre_3.git",
-    "accountId": "da52056c-3728-4966-9cff-76277862ba96"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Temur0559/SAE_Semestre_3.git&quot;,
+    &quot;accountId&quot;: &quot;da52056c-3728-4966-9cff-76277862ba96&quot;
   }
-}]]></component>
+}</component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="/bin/php" />
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -59,24 +95,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "PHP Script.index.php.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "sprint/sprint-1",
-    "last_opened_file_path": "/users/info/temur.usupovi/PhpstormProjects/untitled3",
-    "list.type.of.created.stylesheet": "CSS",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;JavaScript Debug.index.php.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;PHP Script.diag_find.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHP Script.index.php.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;sprint/sprint-1&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/users/info/temur.usupovi/PhpstormProjects/untitled3&quot;,
+    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -85,8 +123,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-b598e85cdad2-JavaScript-PS-252.25557.128" />
-        <option value="bundled-php-predefined-a98d8de5180a-ce40d0652d34-com.jetbrains.php.sharedIndexes-PS-252.25557.128" />
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-PS-252.26830.95" />
+        <option value="bundled-php-predefined-a98d8de5180a-9b563d34894c-com.jetbrains.php.sharedIndexes-PS-252.26830.95" />
       </set>
     </attachedChunks>
   </component>
@@ -99,6 +137,18 @@
       <updated>1758530187613</updated>
       <workItem from="1758530188635" duration="7711000" />
       <workItem from="1758705191958" duration="319000" />
+      <workItem from="1759148235142" duration="4644000" />
+      <workItem from="1759917378434" duration="1760000" />
+      <workItem from="1759919888700" duration="1414000" />
+      <workItem from="1759932897170" duration="1441000" />
+      <workItem from="1759934357724" duration="872000" />
+      <workItem from="1760075002103" duration="1644000" />
+      <workItem from="1760106312397" duration="1180000" />
+      <workItem from="1760357868272" duration="8967000" />
+      <workItem from="1760443903841" duration="7922000" />
+      <workItem from="1760511180263" duration="334000" />
+      <workItem from="1760511523867" duration="1277000" />
+      <workItem from="1760702792876" duration="10000" />
     </task>
     <servers />
   </component>

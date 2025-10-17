@@ -1,31 +1,38 @@
 <?php
-require_once __DIR__ . '/Presenter/AbsencePresenter.php';
+declare(strict_types=1);
+session_start();
+require_once __DIR__ . '/../connexion/Presenter/require_role.php';
+require_role('ETUDIANT');
+require_once __DIR__ . '/Model/AbsenceModel.php';
 
-$presenter = new AbsencePresenter();
+$userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
+if ($userId <= 0) { header('Location: /connexion/View/login.php'); exit; }
 
-$id   = isset($_POST['id']) ? (int)$_POST['id'] : null;
-$file = isset($_FILES['justificatif']) ? $_FILES['justificatif'] : null;
+$absenceId = isset($_POST['absence_id']) ? (int)$_POST['absence_id'] : 0;
+$file      = isset($_FILES['justificatif']) ? $_FILES['justificatif'] : null;
 
-if ($id === null || !$file || $file['error'] !== UPLOAD_ERR_OK) {
-    header('Location: index.php'); exit;
+if ($absenceId <= 0 || !$file || $file['error'] !== UPLOAD_ERR_OK) {
+    header('Location: ./index.php'); exit;
 }
 
-$maxSize  = 10 * 1024 * 1024;
-$allowed  = ['pdf','jpg','jpeg','png','gif','webp'];
-$ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
-if (!in_array($ext, $allowed) || $file['size'] > $maxSize) {
-    header('Location: index.php'); exit;
+$maxSize = 10 * 1024 * 1024;
+if ($file['size'] > $maxSize) { header('Location: ./index.php'); exit; }
+
+$original = (string)$file['name'];
+$mime     = (string)($file['type'] ?: 'application/octet-stream');
+$blob     = file_get_contents($file['tmp_name']);
+
+try {
+    AbsenceModel::insertJustificatif($absenceId, $userId, $original, $mime, $blob);
+} catch (Throwable $e) {
+
+    http_response_code(500);
+    echo "<pre>Upload error: " . $e->getMessage() . "</pre>";
+    exit;
 }
 
-$dir = __DIR__ . '/uploads';
-if (!is_dir($dir)) mkdir($dir, 0777, true);
 
-$san  = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($file['name']));
-$name = 'justif_' . time() . '_' . $san;
-$dest = $dir . '/' . $name;
-
-if (move_uploaded_file($file['tmp_name'], $dest)) {
-    $presenter->enregistrerJustificatif($id, $name);
-}
-header('Location: index.php'); exit;
+$qs = isset($_GET['filtre']) ? '?filtre=' . urlencode($_GET['filtre']) : '';
+header('Location: ./index.php' . $qs);
+exit;
