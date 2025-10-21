@@ -1,0 +1,185 @@
+DROP TABLE IF EXISTS HistoriqueDecision CASCADE;
+DROP TABLE IF EXISTS JustificatifAbsence CASCADE;
+DROP TABLE IF EXISTS Justificatif CASCADE;
+DROP TABLE IF EXISTS Absence CASCADE;
+DROP TABLE IF EXISTS Seance CASCADE;
+DROP TABLE IF EXISTS Enseignement CASCADE;
+DROP TABLE IF EXISTS Matiere CASCADE;
+DROP TABLE IF EXISTS Programme CASCADE;
+DROP TABLE IF EXISTS Utilisateur CASCADE;
+
+DROP TYPE IF EXISTS Role CASCADE;
+DROP TYPE IF EXISTS TypeDecision CASCADE;
+DROP TYPE IF EXISTS PresenceEtat CASCADE;
+DROP TYPE IF EXISTS JustifEtat CASCADE;
+
+CREATE TYPE Role AS ENUM ('ETUDIANT','ENSEIGNANT','RESPONSABLE','SECRETAIRE');
+CREATE TYPE TypeDecision AS ENUM('SOUMISSION','DEMANDE_PRECISIONS','RENVOI_FICHIER','ACCEPTATION','REJET','AUTORISATION_RENVOI','AUTORISATION_HORS_DELAI');
+CREATE TYPE PresenceEtat AS ENUM ('ABSENT','PRESENT');
+CREATE TYPE JustifEtat   AS ENUM ('JUSTIFIEE','NON_JUSTIFIEE','INCONNU');
+
+CREATE TABLE Utilisateur (
+  id                SERIAL PRIMARY KEY,
+  identifiant       TEXT NOT NULL,
+  nom               TEXT NOT NULL,
+  prenom            TEXT NOT NULL,
+  prenom2           TEXT,
+  date_naissance    DATE,
+  email             TEXT NOT NULL,
+  ine               TEXT,
+  mot_de_passe_hash TEXT NOT NULL,
+  role              Role NOT NULL DEFAULT 'ETUDIANT',
+  UNIQUE (identifiant),
+  UNIQUE (email)
+);
+
+CREATE TABLE Programme (
+  id         SERIAL PRIMARY KEY,
+  libelle    TEXT NOT NULL,
+  composante TEXT NOT NULL,
+  public     TEXT NOT NULL,
+  UNIQUE (libelle, composante, public)
+);
+
+CREATE TABLE Matiere (
+  id      SERIAL PRIMARY KEY,
+  code    TEXT NOT NULL,
+  libelle TEXT NOT NULL,
+  UNIQUE (code)
+);
+
+CREATE TABLE Enseignement (
+  id         SERIAL PRIMARY KEY,
+  code       TEXT NOT NULL,
+  libelle    TEXT NOT NULL,
+  id_matiere INT REFERENCES Matiere(id) ON DELETE SET NULL,
+  UNIQUE (code)
+);
+
+CREATE TABLE Seance (
+  id              SERIAL PRIMARY KEY,
+  id_vt           TEXT,
+  date            DATE NOT NULL,
+  heure           TIME NOT NULL,
+  duree           INTERVAL NOT NULL,
+  type            TEXT NOT NULL,
+  id_programme    INT REFERENCES Programme(id) ON DELETE SET NULL,
+  id_enseignement INT REFERENCES Enseignement(id) ON DELETE SET NULL,
+  groupes         TEXT,
+  salles          TEXT,
+  profs           TEXT,
+  controle        BOOLEAN NOT NULL DEFAULT FALSE,
+  UNIQUE (date, heure, duree, id_enseignement, id_programme)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_seance_vt ON Seance(id_vt);
+
+CREATE TABLE Absence (
+  id             SERIAL PRIMARY KEY,
+  id_utilisateur INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+  id_seance      INT NOT NULL REFERENCES Seance(id) ON DELETE CASCADE,
+  presence       PresenceEtat NOT NULL DEFAULT 'ABSENT',
+  justification  JustifEtat   NOT NULL DEFAULT 'INCONNU',
+  motif          TEXT,
+  commentaire    TEXT,
+  UNIQUE (id_utilisateur, id_seance)
+);
+
+CREATE TABLE Justificatif (
+  id                   SERIAL PRIMARY KEY,
+  fichier              BYTEA NOT NULL,
+  commentaire          TEXT,
+  date_soumission      TIMESTAMP NOT NULL DEFAULT NOW(),
+  date_maj             TIMESTAMP NOT NULL DEFAULT NOW(),
+  motif_libre          TEXT,
+  id_utilisateur       INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+  nom_fichier_original TEXT NOT NULL,
+  type_mime            TEXT NOT NULL
+);
+
+CREATE TABLE JustificatifAbsence (
+  id_justificatif INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  id_absence      INT NOT NULL REFERENCES Absence(id) ON DELETE CASCADE,
+  PRIMARY KEY (id_justificatif, id_absence)
+);
+
+CREATE TABLE HistoriqueDecision (
+  id              SERIAL PRIMARY KEY,
+  action          TypeDecision NOT NULL,
+  date_action     TIMESTAMP NOT NULL DEFAULT NOW(),
+  motif_decision  TEXT,
+  id_justificatif INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  id_auteur       INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_absence_utilisateur ON Absence(id_utilisateur);
+CREATE INDEX idx_absence_seance      ON Absence(id_seance);
+CREATE INDEX idx_justificatif_user   ON Justificatif(id_utilisateur);
+CREATE INDEX idx_hist_justif         ON HistoriqueDecision(id_justificatif);
+CREATE INDEX idx_seance_programme    ON Seance(id_programme);
+CREATE INDEX idx_seance_enseignement ON Seance(id_enseignement);
+
+INSERT INTO Utilisateur (id, identifiant, nom, prenom, email, date_naissance, ine, role, mot_de_passe_hash) VALUES
+(1,'abdelwaheb.chakour','Chakour','Abdelwaheb','abdelwaheb.chakour@uphf.fr','2005-02-12','INE-ABDEL-0001','ETUDIANT','hash_etudiant'),
+(2,'marie.dupont','Dupont','Marie','marie.dupont@uphf.fr','2004-09-21','INE-MARIE-0002','ETUDIANT','hash_etudiant'),
+(3,'julien.vion','Vion','Julien','julien.vion@uphf.fr','1985-06-03',NULL,'RESPONSABLE','hash_responsable')
+ON CONFLICT (id) DO UPDATE SET identifiant=EXCLUDED.identifiant;
+
+INSERT INTO Programme (id, libelle, composante, public) VALUES
+(1,'BUT INFORMATIQUE','IUT','FI')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Matiere (id, code, libelle) VALUES
+(1,'MAT101','Analyse 1'),
+(2,'INFO201','Programmation 2'),
+(3,'PHY301','Physique générale')
+ON CONFLICT (id) DO UPDATE SET code=EXCLUDED.code, libelle=EXCLUDED.libelle;
+
+INSERT INTO Enseignement (id, code, libelle, id_matiere) VALUES
+(1,'ENS-MAT101-TD1','Analyse 1 — TD',1),
+(2,'ENS-INFO201-TP','Programmation 2 — TP',2),
+(3,'ENS-PHY301-CM','Physique générale — CM',3)
+ON CONFLICT (id) DO UPDATE SET code=EXCLUDED.code, libelle=EXCLUDED.libelle, id_matiere=EXCLUDED.id_matiere;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(1,'2025-10-02','09:00','2 hours','TP',1,2,'G1','B201','Dupont',FALSE),
+(2,'2025-10-03','10:00','1 hour','TD',1,1,'G1','A105','Martin',TRUE),
+(3,'2025-10-05','08:30','1 hour 30 minutes','CM',1,3,'ALL','Amphi','Durand',FALSE),
+(4,'2025-10-06','14:00','1 hour','TD',1,2,'G2','C304','Dupont',FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+(1,1,1,'ABSENT'::PresenceEtat,'INCONNU'::JustifEtat,'Programmation 2','Certificat médical attendu'),
+(2,1,2,'ABSENT'::PresenceEtat,'NON_JUSTIFIEE'::JustifEtat,'Analyse 1','Document illisible'),
+(3,1,3,'ABSENT'::PresenceEtat,'JUSTIFIEE'::JustifEtat,'Physique','Justificatif familial'),
+(4,1,4,'ABSENT'::PresenceEtat,'INCONNU'::JustifEtat,'Programmation 2','En attente de justificatif')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Justificatif (id, fichier, commentaire, date_soumission, date_maj, motif_libre, id_utilisateur, nom_fichier_original, type_mime) VALUES
+(1,'\x255044','Certificat médical',NOW(),NOW(),NULL,1,'certificat_medical.pdf','application/pdf'),
+(2,'\x89504E47','Photo floue',NOW(),NOW(),NULL,1,'photo_justif.png','image/png'),
+(3,'\x504B03','Justificatif compressé',NOW(),NOW(),NULL,1,'justif.zip','application/zip')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES
+(1,1),
+(2,2),
+(3,3)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO HistoriqueDecision (id, action, date_action, motif_decision, id_justificatif, id_auteur) VALUES
+(1,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',1,1),
+(2,'ACCEPTATION'::TypeDecision,NOW(),'Certificat accepté',1,3),
+(3,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',2,1),
+(4,'DEMANDE_PRECISIONS'::TypeDecision,NOW(),'Document illisible',2,3),
+(5,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',3,1),
+(6,'REJET'::TypeDecision,NOW(),'Format non accepté',3,3)
+ON CONFLICT (id) DO NOTHING;
+
+ALTER SEQUENCE utilisateur_id_seq RESTART WITH 4;
+ALTER SEQUENCE programme_id_seq RESTART WITH 2;
+ALTER SEQUENCE matiere_id_seq RESTART WITH 4;
+ALTER SEQUENCE enseignement_id_seq RESTART WITH 4;
+ALTER SEQUENCE seance_id_seq RESTART WITH 5;
+ALTER SEQUENCE absence_id_seq RESTART WITH 5;
+ALTER SEQUENCE justificatif_id_seq RESTART WITH 4;
+ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 7;
