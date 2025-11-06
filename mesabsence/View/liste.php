@@ -1,10 +1,15 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../../connexion/config/base_path.php';
+?>
 <!doctype html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
     <title>Mes absences</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/mesabsence/Style.css">
+    <link rel="stylesheet" href="<?= BASE_PATH ?>/mesabsence/Style.css">
     <script>
         function submitFiltre(sel){ sel.form.submit(); }
     </script>
@@ -13,8 +18,20 @@
 
 <h1 class="title">Mes absences</h1>
 
+<?php
+
+if (isset($ok) && $ok === 'justif_sent'):
+    ?>
+    <div class="toolbar" style="justify-content:center;margin-bottom:16px;">
+        <div class="alert success" style="width:min(1100px,94vw);text-align:center;border-radius:12px;">
+            ✅ **Justificatif envoyé avec succès ! Il est maintenant en statut "En attente".**
+        </div>
+    </div>
+<?php endif; ?>
+
+
 <div class="toolbar">
-    <form action="../index.php" method="get" class="filter-form">
+    <form action="<?= BASE_PATH ?>/mesabsence/index.php" method="get" class="filter-form">
         <label for="filtre">Filtrer :</label>
         <select name="filtre" id="filtre" onchange="submitFiltre(this)">
             <?php
@@ -47,10 +64,11 @@
     </aside>
 
     <section class="table-wrap">
+        <h2>Historique Complet des Absences et Déclarations</h2>
         <table class="abs-table">
             <thead>
             <tr>
-                <th>DATE</th>
+                <th>DATE (ou Plage)</th>
                 <th>COURS / MOTIF</th>
                 <th>JUSTIFICATIF</th>
                 <th>STATUT</th>
@@ -61,25 +79,38 @@
             <tbody>
             <?php foreach ($absences as $a): ?>
                 <?php
+                $isRange = $a['is_range'] ?? false;
                 $s = strtolower($a['statut']);
+
+
                 $cls = ($s === 'accepté' || $s === 'accepte') ? 'accepted'
                         : (($s === 'rejeté' || $s === 'rejete') ? 'rejected'
                                 : ($s === 'en révision' || $s === 'en revision' ? 'review'
                                         : ($s === 'en attente' ? 'pending' : '')));
+                $displayStatus = $a['statut'];
+
+
+                if (strtolower($filtreActuel) !== 'tous') {
+                    if (strpos(strtolower($displayStatus), strtolower($filtreActuel)) === false) {
+                        continue;
+                    }
+                }
                 ?>
                 <tr>
                     <td><?= htmlspecialchars($a['date']) ?></td>
                     <td><?= htmlspecialchars($a['motif']) ?></td>
                     <td class="justif-cell">
                         <?php if (!empty($a['justificatif_id'])): ?>
-                            <a href="/mesabsence/get_justif.php?id=<?= (int)$a['justificatif_id'] ?>" target="_blank" title="Télécharger le justificatif">📄</a>
+                            <a href="<?= BASE_PATH ?>/mesabsence/get_justif.php?id=<?= (int)$a['justificatif_id'] ?>" target="_blank" title="Télécharger le justificatif">📄</a>
                         <?php else: ?>—<?php endif; ?>
                     </td>
-                    <td class="status <?= $cls ?>"><?= htmlspecialchars($a['statut']) ?></td>
+                    <td class="status <?= $cls ?>"><?= htmlspecialchars($displayStatus) ?></td>
                     <td><?= htmlspecialchars($a['commentaire'] ?? '') ?></td>
                     <td>
-                        <?php if (!empty($a['can_upload'])): ?>
-                            <form action="/mesabsence/upload.php" method="post" enctype="multipart/form-data" class="upload-form">
+                        <?php if ($isRange): ?>
+                            <button class="btn-disabled" disabled>DÉCLARATION</button>
+                        <?php elseif (!empty($a['can_upload'])): ?>
+                            <form action="<?= BASE_PATH ?>/mesabsence/upload.php" method="post" enctype="multipart/form-data" class="upload-form">
                                 <input type="hidden" name="absence_id" value="<?= (int)$a['absence_id'] ?>">
                                 <input type="file" name="justificatif" required>
                                 <button type="submit" class="btn-insert">INSÉRER</button>
@@ -95,12 +126,7 @@
     </section>
 </div>
 
-<div class="actions-bottom">
-    <form action="/mesabsence/save.php" method="post">
-        <input type="hidden" name="filtre" value="<?= htmlspecialchars($filtreActuel ?? 'tous') ?>">
-        <button class="btn-primary" type="submit">ENREGISTRER LES MODIFICATIONS</button>
-    </form>
-</div>
+
 
 </body>
 </html>

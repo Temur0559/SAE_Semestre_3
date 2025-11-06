@@ -5,54 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/connexion/Presenter/require_role.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_enseignant.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_responsable.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/connexion/config/db.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/connexion/logout.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mesabsence/get_justif.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Notification/NotificationService.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/config/base_path.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/soum_justif/Index.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/soum_justif/JustificationModel.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/soum_justif/justification.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/temp.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/vt/sae_vt.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Model/HelpModel.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Model/PasswordModel.php" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/HelpPresenter.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/LoginPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/LoginPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/PasswordPresenter.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/RegisterPresenter.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/UserPresenter.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Style.css" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/aide.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/aide.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/error.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/login.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/login.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/motdepasse_oublie.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/premiere_connexion.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/success.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/traitement.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/traitement_mdp.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/traitement_premiere.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Presenter/require_role.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/require_role.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/config/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/config/db.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/Presenter/AbsencePresenter.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/Style.css" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mesabsence/View/liste.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/View/success.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/get_justif.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/get_justif.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mesabsence/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/save.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/save.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/storage/absences.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/upload.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/upload.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759140897_Firefox_wallpaper.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759149667_Firefox_wallpaper.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759150360_Firefox_wallpaper.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/uploads/justif_1759150593_Firefox_wallpaper.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ComposerSettings">
+  <component name="ComposerSettings" synchronizationState="SYNCHRONIZE">
+    <pharConfigPath>$PROJECT_DIR$/composer.json</pharConfigPath>
     <execution />
   </component>
   <component name="FileTemplateManagerImpl">
@@ -80,10 +57,15 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/Temur0559/SAE_Semestre_3.git&quot;,
-    &quot;accountId&quot;: &quot;da52056c-3728-4966-9cff-76277862ba96&quot;
+    &quot;accountId&quot;: &quot;17fc673f-79e4-4e8e-8813-53ae77add838&quot;
   }
 }</component>
-  <component name="PhpWorkspaceProjectConfiguration" interpreter_name="/bin/php" />
+  <component name="PhpWorkspaceProjectConfiguration" interpreter_name="PHP">
+    <include_path>
+      <path value="$PROJECT_DIR$/vendor/composer" />
+      <path value="$PROJECT_DIR$/vendor/phpmailer/phpmailer" />
+    </include_path>
+  </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -99,12 +81,16 @@
   &quot;keyToString&quot;: {
     &quot;JavaScript Debug.index.php.executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;PHP Script.UserModel.php.executor&quot;: &quot;Run&quot;,
     &quot;PHP Script.diag_find.php.executor&quot;: &quot;Run&quot;,
     &quot;PHP Script.index.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHP Script.temp.php.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;sprint/sprint-1&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;/users/info/temur.usupovi/PhpstormProjects/untitled3&quot;,
     &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
@@ -112,6 +98,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -149,6 +136,16 @@
       <workItem from="1760511180263" duration="334000" />
       <workItem from="1760511523867" duration="1277000" />
       <workItem from="1760702792876" duration="10000" />
+      <workItem from="1762186056223" duration="14374000" />
+      <workItem from="1762200769258" duration="1854000" />
+      <workItem from="1762202649724" duration="1200000" />
+      <workItem from="1762242378082" duration="220000" />
+      <workItem from="1762242614119" duration="1062000" />
+      <workItem from="1762243858720" duration="1076000" />
+      <workItem from="1762245519285" duration="994000" />
+      <workItem from="1762259246582" duration="4699000" />
+      <workItem from="1762269636360" duration="759000" />
+      <workItem from="1762449123231" duration="3332000" />
     </task>
     <servers />
   </component>

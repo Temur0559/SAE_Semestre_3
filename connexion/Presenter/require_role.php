@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-session_start();
+
 
 function require_login() {
     if (empty($_SESSION['user'])) { header('Location: ../connexion/View/login.php'); exit; }

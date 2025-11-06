@@ -16,4 +16,4 @@ $name = $j['original_filename'] ? $j['original_filename'] : ('justificatif_' . $
 
 header('Content-Type: ' . $mime);
 header('Content-Disposition: inline; filename="' . addslashes($name) . '"');
-echo $j['fichier']; // BYTEA -> renvoyé tel quel
+echo $j['fichier'];
