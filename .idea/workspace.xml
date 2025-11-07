@@ -4,24 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Notification/NotificationService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/connexion/config/base_path.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/soum_justif/Index.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/soum_justif/JustificationModel.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/soum_justif/justification.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/temp.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/vt/sae_vt.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Presenter/require_role.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Presenter/require_role.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/config/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/config/db.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/View/liste.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/get_justif.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/get_justif.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Notification/NotificationService.php" beforeDir="false" afterPath="$PROJECT_DIR$/Notification/NotificationService.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -145,11 +130,25 @@
       <workItem from="1762245519285" duration="994000" />
       <workItem from="1762259246582" duration="4699000" />
       <workItem from="1762269636360" duration="759000" />
-      <workItem from="1762449123231" duration="3332000" />
+      <workItem from="1762449123231" duration="5139000" />
+      <workItem from="1762500535698" duration="2258000" />
     </task>
+    <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
+      <option name="closed" value="true" />
+      <created>1762452832358</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1762452832358</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT." />
+    <option name="LAST_COMMIT_MESSAGE" value="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT." />
   </component>
 </project>
