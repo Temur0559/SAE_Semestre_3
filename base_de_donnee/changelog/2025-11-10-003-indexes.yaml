@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: abdel-20251110-003-indexes
+      author: abdel
+      changes:
+        - createIndex: { indexName: idx_absence_utilisateur, tableName: absence, columns: [ { name: id_utilisateur } ] }
+        - createIndex: { indexName: idx_absence_seance,      tableName: absence, columns: [ { name: id_seance } ] }
+        - createIndex: { indexName: idx_justificatif_user,   tableName: justificatif, columns: [ { name: id_utilisateur } ] }
+        - createIndex: { indexName: idx_hist_justif,         tableName: historiquedecision, columns: [ { name: id_justificatif } ] }
+        - createIndex: { indexName: idx_seance_programme,    tableName: seance, columns: [ { name: id_programme } ] }
+        - createIndex: { indexName: idx_seance_enseignement, tableName: seance, columns: [ { name: id_enseignement } ] }
+        - createIndex:
+            indexName: uq_seance_vt
+            tableName: seance
+            unique: true
+            columns: [ { name: id_vt } ]

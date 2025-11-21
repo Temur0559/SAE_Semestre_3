@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: abdel-20251110-001a-types-safe
+      author: abdel
+      changes:
+        - sql:
+            splitStatements: false
+            stripComments: true
+            sql: |
+              DO $$
+              BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+                  CREATE TYPE role AS ENUM ('ETUDIANT','ENSEIGNANT','RESPONSABLE','SECRETAIRE');
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'typedecision') THEN
+                  CREATE TYPE typedecision AS ENUM (
+                    'SOUMISSION',
+                    'DEMANDE_PRECISIONS',
+                    'RENVOI_FICHIER',
+                    'ACCEPTATION',
+                    'REJET',
+                    'AUTORISATION_RENVOI',
+                    'AUTORISATION_HORS_DELAI'
+                  );
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'presenceetat') THEN
+                  CREATE TYPE presenceetat AS ENUM ('ABSENT','PRESENT');
+                END IF;
+
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'justifetat') THEN
+                  CREATE TYPE justifetat AS ENUM ('JUSTIFIEE','NON_JUSTIFIEE','INCONNU');
+                END IF;
+              END;
+              $$;

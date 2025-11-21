@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: abdel-20251110-005-reset-seq
+      author: abdel
+      context: seed
+      changes:
+        - sql:
+            sql: |
+              ALTER SEQUENCE utilisateur_id_seq        RESTART WITH 4;
+              ALTER SEQUENCE programme_id_seq          RESTART WITH 2;
+              ALTER SEQUENCE matiere_id_seq            RESTART WITH 4;
+              ALTER SEQUENCE enseignement_id_seq       RESTART WITH 4;
+              ALTER SEQUENCE seance_id_seq             RESTART WITH 5;
+              ALTER SEQUENCE absence_id_seq            RESTART WITH 5;
+              ALTER SEQUENCE justificatif_id_seq       RESTART WITH 4;
+              ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 7;

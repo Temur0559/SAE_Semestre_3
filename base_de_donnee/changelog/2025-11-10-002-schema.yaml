@@ -1,0 +1,187 @@
+databaseChangeLog:
+  - changeSet:
+      id: abdel-20251110-002-schema
+      author: abdel
+      changes:
+        - createTable:
+            tableName: utilisateur
+            columns:
+              - column: { name: id,                type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: identifiant,       type: TEXT,   constraints: { nullable: false } }
+              - column: { name: nom,               type: TEXT,   constraints: { nullable: false } }
+              - column: { name: prenom,            type: TEXT,   constraints: { nullable: false } }
+              - column: { name: prenom2,           type: TEXT }
+              - column: { name: date_naissance,    type: DATE }
+              - column: { name: email,             type: TEXT,   constraints: { nullable: false } }
+              - column: { name: ine,               type: TEXT }
+              - column: { name: mot_de_passe_hash, type: TEXT,   constraints: { nullable: false } }
+              - column: { name: role,              type: role,   defaultValue: "ETUDIANT", constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: utilisateur, columnNames: identifiant, constraintName: uq_utilisateur_identifiant }
+        - addUniqueConstraint: { tableName: utilisateur, columnNames: email,       constraintName: uq_utilisateur_email }
+
+        - createTable:
+            tableName: programme
+            columns:
+              - column: { name: id,         type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: libelle,    type: TEXT,   constraints: { nullable: false } }
+              - column: { name: composante, type: TEXT,   constraints: { nullable: false } }
+              - column: { name: public,     type: TEXT,   constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: programme
+            columnNames: libelle,composante,public
+            constraintName: uq_programme_triple
+
+        - createTable:
+            tableName: matiere
+            columns:
+              - column: { name: id,      type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code,    type: TEXT,   constraints: { nullable: false } }
+              - column: { name: libelle, type: TEXT,   constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: matiere, columnNames: code, constraintName: uq_matiere_code }
+
+        - createTable:
+            tableName: enseignement
+            columns:
+              - column: { name: id,         type: SERIAL, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code,       type: TEXT,   constraints: { nullable: false } }
+              - column: { name: libelle,    type: TEXT,   constraints: { nullable: false } }
+              - column: { name: id_matiere, type: INT }
+        - addUniqueConstraint: { tableName: enseignement, columnNames: code, constraintName: uq_enseignement_code }
+        - addForeignKeyConstraint:
+            baseTableName: enseignement
+            baseColumnNames: id_matiere
+            referencedTableName: matiere
+            referencedColumnNames: id
+            onDelete: SET NULL
+            constraintName: fk_enseignement_matiere
+
+        - createTable:
+            tableName: seance
+            columns:
+              - column: { name: id,              type: SERIAL,    constraints: { primaryKey: true, nullable: false } }
+              - column: { name: id_vt,           type: TEXT }
+              - column: { name: date,            type: DATE,      constraints: { nullable: false } }
+              - column: { name: heure,           type: TIME,      constraints: { nullable: false } }
+              - column: { name: duree,           type: INTERVAL,  constraints: { nullable: false } }
+              - column: { name: type,            type: TEXT,      constraints: { nullable: false } }
+              - column: { name: id_programme,    type: INT }
+              - column: { name: id_enseignement, type: INT }
+              - column: { name: groupes,         type: TEXT }
+              - column: { name: salles,          type: TEXT }
+              - column: { name: profs,           type: TEXT }
+              - column: { name: controle,        type: BOOLEAN,   defaultValueBoolean: false, constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: seance
+            columnNames: date,heure,duree,id_enseignement,id_programme
+            constraintName: uq_seance_compo
+        - addForeignKeyConstraint:
+            baseTableName: seance
+            baseColumnNames: id_programme
+            referencedTableName: programme
+            referencedColumnNames: id
+            onDelete: SET NULL
+            constraintName: fk_seance_programme
+        - addForeignKeyConstraint:
+            baseTableName: seance
+            baseColumnNames: id_enseignement
+            referencedTableName: enseignement
+            referencedColumnNames: id
+            onDelete: SET NULL
+            constraintName: fk_seance_enseignement
+
+        - createTable:
+            tableName: absence
+            columns:
+              - column: { name: id,             type: SERIAL,       constraints: { primaryKey: true, nullable: false } }
+              - column: { name: id_utilisateur, type: INT,          constraints: { nullable: false } }
+              - column: { name: id_seance,      type: INT,          constraints: { nullable: false } }
+              - column: { name: presence,       type: presenceetat, defaultValue: "ABSENT",  constraints: { nullable: false } }
+              - column: { name: justification,  type: justifetat,   defaultValue: "INCONNU", constraints: { nullable: false } }
+              - column: { name: motif,          type: TEXT }
+              - column: { name: commentaire,    type: TEXT }
+        - addUniqueConstraint:
+            tableName: absence
+            columnNames: id_utilisateur,id_seance
+            constraintName: uq_absence_user_seance
+        - addForeignKeyConstraint:
+            baseTableName: absence
+            baseColumnNames: id_utilisateur
+            referencedTableName: utilisateur
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_absence_user
+        - addForeignKeyConstraint:
+            baseTableName: absence
+            baseColumnNames: id_seance
+            referencedTableName: seance
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_absence_seance
+
+        - createTable:
+            tableName: justificatif
+            columns:
+              - column: { name: id,                   type: SERIAL,    constraints: { primaryKey: true, nullable: false } }
+              - column: { name: fichier,              type: BYTEA,     constraints: { nullable: false } }
+              - column: { name: commentaire,          type: TEXT }
+              - column: { name: date_soumission,      type: TIMESTAMP, defaultValueComputed: "NOW()", constraints: { nullable: false } }
+              - column: { name: date_maj,             type: TIMESTAMP, defaultValueComputed: "NOW()", constraints: { nullable: false } }
+              - column: { name: motif_libre,          type: TEXT }
+              - column: { name: id_utilisateur,       type: INT,       constraints: { nullable: false } }
+              - column: { name: nom_fichier_original, type: TEXT,      constraints: { nullable: false } }
+              - column: { name: type_mime,            type: TEXT,      constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: justificatif
+            baseColumnNames: id_utilisateur
+            referencedTableName: utilisateur
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_justificatif_user
+
+        - createTable:
+            tableName: justificatifabsence
+            columns:
+              - column: { name: id_justificatif, type: INT, constraints: { nullable: false } }
+              - column: { name: id_absence,      type: INT, constraints: { nullable: false } }
+        - addPrimaryKey:
+            tableName: justificatifabsence
+            columnNames: id_justificatif,id_absence
+            constraintName: pk_justificatifabsence
+        - addForeignKeyConstraint:
+            baseTableName: justificatifabsence
+            baseColumnNames: id_justificatif
+            referencedTableName: justificatif
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_ja_justif
+        - addForeignKeyConstraint:
+            baseTableName: justificatifabsence
+            baseColumnNames: id_absence
+            referencedTableName: absence
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_ja_absence
+
+        - createTable:
+            tableName: historiquedecision
+            columns:
+              - column: { name: id,              type: SERIAL,       constraints: { primaryKey: true, nullable: false } }
+              - column: { name: action,          type: typedecision, constraints: { nullable: false } }
+              - column: { name: date_action,     type: TIMESTAMP,    defaultValueComputed: "NOW()", constraints: { nullable: false } }
+              - column: { name: motif_decision,  type: TEXT }
+              - column: { name: id_justificatif, type: INT,          constraints: { nullable: false } }
+              - column: { name: id_auteur,       type: INT,          constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: historiquedecision
+            baseColumnNames: id_justificatif
+            referencedTableName: justificatif
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_hist_justif
+        - addForeignKeyConstraint:
+            baseTableName: historiquedecision
+            baseColumnNames: id_auteur
+            referencedTableName: utilisateur
+            referencedColumnNames: id
+            onDelete: CASCADE
+            constraintName: fk_hist_auteur

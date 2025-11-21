@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - include:
+      file: changelog/2025-11-10-001a-types-safe.yaml
+  - include:
+      file: changelog/2025-11-10-002-schema.yaml
+  - include:
+      file: changelog/2025-11-10-003-indexes.yaml
+  - include:
+      file: changelog/2025-11-10-004-seed.yaml
+  - include:
+      file: changelog/2025-11-10-005-reset-sequences.yaml
+  - include:
+      file: changelog/2025-11-10-006-justificatif-alter.yaml

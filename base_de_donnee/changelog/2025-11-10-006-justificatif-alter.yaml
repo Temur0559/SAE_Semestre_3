@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: abdel-20251110-006-justificatif-alter
+      author: abdel
+      changes:
+        - addColumn:
+            tableName: justificatif
+            columns:
+              - column: { name: date_debut_demande, type: DATE }
+              - column: { name: date_fin_demande,   type: DATE }
+
+        - dropNotNullConstraint: { tableName: justificatif, columnName: fichier,              columnDataType: BYTEA }
+        - dropNotNullConstraint: { tableName: justificatif, columnName: nom_fichier_original, columnDataType: TEXT }
+        - dropNotNullConstraint: { tableName: justificatif, columnName: type_mime,            columnDataType: TEXT }
+
+        - addColumn:
+            tableName: justificatif
+            columns:
+              - column: { name: verouille,      type: BOOLEAN, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: verouille_date, type: TIMESTAMP }
+
+      rollback:
+        - dropColumn: { tableName: justificatif, columnName: date_debut_demande }
+        - dropColumn: { tableName: justificatif, columnName: date_fin_demande }
+        - addNotNullConstraint: { tableName: justificatif, columnName: fichier,              columnDataType: BYTEA }
+        - addNotNullConstraint: { tableName: justificatif, columnName: nom_fichier_original, columnDataType: TEXT }
+        - addNotNullConstraint: { tableName: justificatif, columnName: type_mime,            columnDataType: TEXT }
+        - dropColumn: { tableName: justificatif, columnName: verouille }
+        - dropColumn: { tableName: justificatif, columnName: verouille_date }
