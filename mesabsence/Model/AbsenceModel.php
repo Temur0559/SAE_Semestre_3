@@ -307,4 +307,78 @@ final class AbsenceModel
 
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }
+
+
+    public static function getAbsencesForInitialReminder(): array
+    {
+
+        $sql = "
+            SELECT
+                a.id AS absence_id,
+                u.email, u.nom, u.prenom, s.date, s.heure, e.libelle AS motif_seance
+            FROM Absence a
+            JOIN Utilisateur u ON u.id = a.id_utilisateur
+            JOIN Seance s ON s.id = a.id_seance
+            JOIN Enseignement e ON e.id = s.id_enseignement
+            WHERE a.presence = 'ABSENT'
+              AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
+              -- Délai T+1h est passé (déclenchement du rappel)
+              AND (s.date + s.heure) < (NOW() - '1 hour'::interval)
+              -- Le délai légal de 48h n'est PAS encore passé
+              AND (s.date + s.heure) > (NOW() - '48 hours'::interval)
+              AND NOT EXISTS (
+                  SELECT 1 FROM JustificatifAbsence ja
+                  JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+                  WHERE ja.id_absence = a.id AND hd.action = 'SOUMISSION'
+              )
+            LIMIT 50
+        ";
+
+        $st = db()->prepare($sql);
+        $st->execute();
+        return $st->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+
+    public static function getAbsencesForReturnReminder(): array
+    {
+        $sql = "
+            SELECT
+                a.id AS absence_id,
+                u.email, u.nom, u.prenom, s.date AS absence_date, s.heure AS absence_heure, e.libelle AS motif_seance,
+                (
+                    SELECT MIN(s_return.date + s_return.heure)
+                    FROM Absence a_return
+                    JOIN Seance s_return ON s_return.id = a_return.id_seance
+                    WHERE a_return.id_utilisateur = a.id_utilisateur
+                      AND a_return.presence = 'PRESENT'
+                      -- La session de retour doit être APRES la session d'absence
+                      AND s_return.date > s.date 
+                ) AS date_de_retour_effectif
+            FROM Absence a
+            JOIN Utilisateur u ON u.id = a.id_utilisateur
+            JOIN Seance s ON s.id = a.id_seance
+            JOIN Enseignement e ON e.id = s.id_enseignement
+            WHERE a.presence = 'ABSENT'
+              AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
+              -- Exclure si déjà soumis
+              AND NOT EXISTS (
+                  SELECT 1 FROM JustificatifAbsence ja JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+                  WHERE ja.id_absence = a.id AND hd.action = 'SOUMISSION'
+              )
+              -- DÉCLENCHEUR : Le rappel est envoyé 1h APRES la date de retour effective
+              AND EXISTS (
+                  SELECT 1 FROM Absence a_return
+                  JOIN Seance s_return ON s_return.id = a_return.id_seance
+                  WHERE a_return.id_utilisateur = a.id_utilisateur AND a_return.presence = 'PRESENT' AND s_return.date > s.date
+                  -- Vérifie si le retour (MIN(heure)) est passé de plus d'une heure.
+                  HAVING MIN(s_return.date + s_return.heure) < (NOW() - '1 hour'::interval)
+              )
+            LIMIT 50
+        ";
+
+        $st = db()->prepare($sql);
+        $st->execute();
+        return $st->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }

@@ -24,9 +24,11 @@ $role = htmlspecialchars($_SESSION['role'], ENT_QUOTES, 'UTF-8');
         <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn btn-primary" style="margin-right: 15px; margin-bottom: 10px;">
             Consulter Mes Absences
         </a>
-
         <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn btn-primary" style="margin-right: 15px; margin-bottom: 10px;">
             Justifier une Absence
+        </a>
+        <a href="<?= BASE_PATH ?>/notifications/index.php" class="btn btn-primary" style="margin-right: 15px; margin-bottom: 10px;">
+            Mes Notifications
         </a>
 
         <form method="post" action="../logout.php" style="display: inline-block;">
