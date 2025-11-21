@@ -1,0 +1,17 @@
+{
+    "name": "temur/sae_semestre_3",
+    "autoload": {
+        "psr-4": {
+            "Temur\\SaeSemestre3\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Temur0559",
+            "email": "temur.usupovi1@gmail.com"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^7.0"
+    }
+}
