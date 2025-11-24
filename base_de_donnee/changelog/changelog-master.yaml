@@ -11,3 +11,5 @@ databaseChangeLog:
       file: changelog/2025-11-10-005-reset-sequences.yaml
   - include:
       file: changelog/2025-11-10-006-justificatif-alter.yaml
+  - include:
+      file: changelog/2025-11-24-007-scenarios-test.yaml

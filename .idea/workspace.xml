@@ -4,8 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Mail auto après retour et notification pour professeur">
-      <change afterPath="$PROJECT_DIR$/base_de_donnee/test" afterDir="false" />
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="test">
+      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -131,7 +133,11 @@
       <workItem from="1762269636360" duration="759000" />
       <workItem from="1762449123231" duration="5139000" />
       <workItem from="1762500535698" duration="2293000" />
-      <workItem from="1763727754162" duration="3610000" />
+      <workItem from="1763727754162" duration="6550000" />
+      <workItem from="1763740118614" duration="256000" />
+      <workItem from="1763973873451" duration="759000" />
+      <workItem from="1763974806626" duration="677000" />
+      <workItem from="1763975645093" duration="1553000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -157,7 +163,23 @@
       <option name="project" value="LOCAL" />
       <updated>1763733879977</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="test">
+      <option name="closed" value="true" />
+      <created>1763734008873</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1763734008873</updated>
+    </task>
+    <task id="LOCAL-00005" summary="test">
+      <option name="closed" value="true" />
+      <created>1763734035874</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1763734035874</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -167,6 +189,7 @@
     <MESSAGE value="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT." />
     <MESSAGE value="Réparation du mail" />
     <MESSAGE value="Mail auto après retour et notification pour professeur" />
-    <option name="LAST_COMMIT_MESSAGE" value="Mail auto après retour et notification pour professeur" />
+    <MESSAGE value="test" />
+    <option name="LAST_COMMIT_MESSAGE" value="test" />
   </component>
 </project>

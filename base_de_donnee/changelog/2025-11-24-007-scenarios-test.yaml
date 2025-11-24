@@ -1,0 +1,75 @@
+databaseChangeLog:
+  - changeSet:
+      id: temur-20251124-007-scenarios
+      author: temur
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO Utilisateur (id, identifiant, nom, prenom, email, role, mot_de_passe_hash) VALUES
+              (4, 'prof.test', 'Test', 'Prof', 'prof.test@uphf.fr', 'ENSEIGNANT', 'hash_enseignant')
+              ON CONFLICT (id) DO UPDATE SET identifiant=EXCLUDED.identifiant, role=EXCLUDED.role, email=EXCLUDED.email;
+              
+              
+              UPDATE HistoriqueDecision SET id_auteur = 3 WHERE id_auteur = 1;
+              
+              -- SCÉNARIO A: ABSENCE ÉLIGIBLE AU RAPPEl 48H 
+              -- Crée une séance ancienne
+              INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+              (5, '2025-11-19', '11:00', '1 hour', 'TD', 1, 1, 'G2', 'B202', 'Martin', FALSE)
+              ON CONFLICT (id) DO NOTHING;
+              -- Crée une absence INCONNUE pour cette séance (sans justificatif soumis)
+              INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+              (5, 1, 5, 'ABSENT'::PresenceEtat, 'INCONNU'::JustifEtat, 'Rappel 48h en attente', 'Test US7')
+              ON CONFLICT (id) DO NOTHING;
+              
+              
+              --SCÉNARIO B: ABSENCE DE CONTRÔLE ACCEPTÉE 
+              -- Crée une séance de CONTRÔLE (Evaluation) aujourd'hui
+              INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+              (6, CURRENT_DATE, '09:00', '2 hours', 'DS', 1, 2, 'G1', 'A300', 'Dupont', TRUE)
+              ON CONFLICT (id) DO NOTHING;
+              -- Crée une absence pour ce contrôle
+              INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+              (6, 1, 6, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Acceptation Rattrapage', 'Test US8')
+              ON CONFLICT (id) DO NOTHING;
+              -- Soumet le justificatif (JID=4) - Utilisation de E'\\x...' pour BYTEA
+              INSERT INTO Justificatif (id, fichier, commentaire, date_soumission, motif_libre, id_utilisateur, nom_fichier_original, type_mime) VALUES
+              (4, E'\x255044', 'Justif DS accepté', NOW(), 'Maladie', 1, 'justif_ds.pdf', 'application/pdf')
+              ON CONFLICT (id) DO NOTHING;
+              INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (4, 6) ON CONFLICT DO NOTHING;
+              -- Décision RP : ACCEPTATION (C'est le statut que l'US8 recherche)
+              INSERT INTO HistoriqueDecision (id, action, date_action, motif_decision, id_justificatif, id_auteur) VALUES
+              (7, 'ACCEPTATION'::TypeDecision, NOW(), 'Justificatif validé par RP', 4, 3)
+              ON CONFLICT (id) DO NOTHING;
+              
+              
+              --SCÉNARIO C: ABSENCE EN RÉVISION / RE-UPLOAD AUTORISÉ 
+              -- Crée une autre absence (Séance id=7)
+              INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+              (7, CURRENT_DATE, '14:00', '1 hour', 'TP', 1, 2, 'G2', 'B203', 'Martin', FALSE)
+              ON CONFLICT (id) DO NOTHING;
+              INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+              (7, 1, 7, 'ABSENT'::PresenceEtat, 'INCONNU'::JustifEtat, 'En révision', 'Test US4 Re-upload')
+              ON CONFLICT (id) DO NOTHING;
+              -- Soumet le justificatif (JID=5)
+              INSERT INTO Justificatif (id, fichier, commentaire, date_soumission, motif_libre, id_utilisateur, nom_fichier_original, type_mime) VALUES
+              (5, E'\x255044', 'Justif de base', NOW(), 'Autre', 1, 'justif_base.pdf', 'application/pdf')
+              ON CONFLICT (id) DO NOTHING;
+              INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (5, 7) ON CONFLICT DO NOTHING;
+              --Décision RP : DEMANDE_PRECISIONS (C'est le statut qui déverrouille l'upload dans US4)
+              INSERT INTO HistoriqueDecision (id, action, date_action, motif_decision, id_justificatif, id_auteur) VALUES
+              (8, 'DEMANDE_PRECISIONS'::TypeDecision, NOW(), 'Veuillez fournir un document plus lisible', 5, 3)
+              ON CONFLICT (id) DO NOTHING;
+              
+              
+              -- Réinitialisation des séquences
+              ALTER SEQUENCE utilisateur_id_seq RESTART WITH 5;
+              ALTER SEQUENCE seance_id_seq RESTART WITH 8;
+              ALTER SEQUENCE absence_id_seq RESTART WITH 8;
+              ALTER SEQUENCE justificatif_id_seq RESTART WITH 6;
+              ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 9;
+              
+              -- Mise à jour pour le test US7
+              UPDATE Seance SET date = '2025-11-20', heure = '11:00:00' WHERE id = 5;

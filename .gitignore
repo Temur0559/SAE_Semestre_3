@@ -2,3 +2,6 @@
 mesabsence/uploads/*
 
 /vendor/
+
+# NOUVELLE LIGNE : Ignorer le fichier de secrets Liquibase
+base_de_donnee/liquibase.local.properties
