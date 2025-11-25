@@ -1,4 +1,3 @@
-
 body {
     background-color: #f7f7f7;
     margin: 0;
@@ -116,4 +115,65 @@ body {
 }
 .btn-primary-valider:hover {
     background-color: #005f67;
+}
+/* --- AJOUT POUR US2 MULTI-FICHIERS --- */
+.file-list-preview {
+    max-width: 500px;
+    margin: 10px auto;
+    text-align: left;
+    padding: 10px;
+    border: 1px solid #cfd9dd;
+    border-radius: 8px;
+    background: #f7fbfc;
+}
+.file-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 14px;
+    color: #555;
+    border-bottom: 1px dashed #eee;
+}
+.file-list-item:last-child {
+    border-bottom: none;
+}
+.remove-file-btn {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    line-height: 1;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 10px;
+    transition: transform 0.1s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.remove-file-btn:hover {
+    transform: scale(1.1);
+}
+.alert-message {
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin: 12px auto 18px;
+    border: 1px solid transparent;
+    max-width: 500px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+.alert-message.success {
+    background:#eafaf3;
+    border-color:#9be3c0;
+    color:#0b5b3d;
+}
+.alert-message.error {
+    background:#ffecec;
+    border-color:#ffb6b6;
+    color:#7a1d1d;
 }

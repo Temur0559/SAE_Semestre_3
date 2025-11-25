@@ -4,10 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="test">
-      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Mise à jour de la bdd pour les test de la us8 et 7">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-10-004-seed.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-10-004-seed.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/aide.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/aide.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/soum_justif/Index.css" beforeDir="false" afterPath="$PROJECT_DIR$/soum_justif/Index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/soum_justif/justification.php" beforeDir="false" afterPath="$PROJECT_DIR$/soum_justif/justification.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/temp.php" beforeDir="false" afterPath="$PROJECT_DIR$/temp.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,31 +70,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;JavaScript Debug.index.php.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;PHP Script.UserModel.php.executor&quot;: &quot;Run&quot;,
-    &quot;PHP Script.diag_find.php.executor&quot;: &quot;Run&quot;,
-    &quot;PHP Script.index.php.executor&quot;: &quot;Run&quot;,
-    &quot;PHP Script.temp.php.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;sprint/sprint-1&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/users/info/temur.usupovi/PhpstormProjects/untitled3&quot;,
-    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "JavaScript Debug.index.php.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "PHP Script.UserModel.php.executor": "Run",
+    "PHP Script.diag_find.php.executor": "Run",
+    "PHP Script.index.php.executor": "Run",
+    "PHP Script.temp.php.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "sprint/sprint-1",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/users/info/temur.usupovi/PhpstormProjects/untitled3",
+    "list.type.of.created.stylesheet": "CSS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -137,7 +145,8 @@
       <workItem from="1763740118614" duration="256000" />
       <workItem from="1763973873451" duration="759000" />
       <workItem from="1763974806626" duration="677000" />
-      <workItem from="1763975645093" duration="1553000" />
+      <workItem from="1763975645093" duration="2391000" />
+      <workItem from="1764065419436" duration="2219000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -179,7 +188,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763734035874</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Mise à jour de la bdd pour les test de la us8 et 7">
+      <option name="closed" value="true" />
+      <created>1763977478260</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1763977478260</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -190,6 +207,7 @@
     <MESSAGE value="Réparation du mail" />
     <MESSAGE value="Mail auto après retour et notification pour professeur" />
     <MESSAGE value="test" />
-    <option name="LAST_COMMIT_MESSAGE" value="test" />
+    <MESSAGE value="Mise à jour de la bdd pour les test de la us8 et 7" />
+    <option name="LAST_COMMIT_MESSAGE" value="Mise à jour de la bdd pour les test de la us8 et 7" />
   </component>
 </project>

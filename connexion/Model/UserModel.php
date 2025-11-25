@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/db.php';
 
 final class UserModel {
 
-    /** @return array|null */
+
     public static function findByEmail(string $email) {
 
         $sql = "SELECT
@@ -21,22 +21,23 @@ final class UserModel {
         return $u ?: null;
     }
 
-    /** @return array|null */
+
     public static function authenticate(string $email, string $password) {
         $user = self::findByEmail($email);
         if (!$user) return null;
 
-
-        $stored_password = '';
+        $stored_password_hash = '';
         if (isset($user['mot_de_passe_hash']) && $user['mot_de_passe_hash'] !== null) {
-            $stored_password = (string)$user['mot_de_passe_hash'];
+            $stored_password_hash = (string)$user['mot_de_passe_hash'];
         }
 
-        if ($stored_password === '') return null;
+        if ($stored_password_hash === '') return null;
+
+        // VÉRIFICATION SÉCURISÉE (STANDARD ET RECOMMANDÉE)
+        if (password_verify($password, $stored_password_hash)) {
+            return $user;
+        }
 
 
-        if ($password !== $stored_password) return null;
-
-        return $user;
     }
 }

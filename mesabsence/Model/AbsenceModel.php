@@ -162,7 +162,7 @@ final class AbsenceModel
 
     public static function insertJustificatif($absenceId, $userId, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '')
     {
-
+        // Cette fonction est utilisée pour l'upload d'un justificatif pour une SEULE absence (via mesabsence/upload.php)
         $pdo = db();
         $pdo->beginTransaction();
         try {
@@ -225,6 +225,7 @@ final class AbsenceModel
     }
 
 
+
     public static function insertDemandeJustification(
         $userId,
         string $dateDebut,
@@ -249,11 +250,12 @@ final class AbsenceModel
                 RETURNING id
             ");
 
-            $st->bindValue(':f', $binaryContent, \PDO::PARAM_LOB);
+            $st->bindValue(':f', $binaryContent, $binaryContent === null ? \PDO::PARAM_NULL : \PDO::PARAM_LOB);
             $st->bindValue(':comm', $commentaire, \PDO::PARAM_STR);
             $st->bindValue(':u', $userId, \PDO::PARAM_INT);
-            $st->bindValue(':n', $originalName, \PDO::PARAM_STR);
-            $st->bindValue(':m', $mime, \PDO::PARAM_STR);
+            $st->bindValue(':n', $originalName, $originalName === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
+            $st->bindValue(':m', $mime, $mime === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
+
             $st->bindValue(':motifL', $motifLibre, \PDO::PARAM_STR);
             $st->bindValue(':dd', $dateDebut, \PDO::PARAM_STR);
             $st->bindValue(':df', $dateFin, \PDO::PARAM_STR);
@@ -272,11 +274,73 @@ final class AbsenceModel
                 ':motif_hist' => $historiqueMotif
             ]);
 
+            // US2: Tente de lier toutes les absences passées dans la plage au nouveau justificatif
+            self::linkJustificatifToAbsences($jid, $userId, $dateDebut, $dateFin);
+
             $pdo->commit();
             return $jid;
 
         } catch (\Throwable $e) {
             $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+
+    public static function linkJustificatifToAbsences(int $justifId, int $userId, string $dateDebut, string $dateFin): int
+    {
+        $pdo = db();
+        // Utilise la même transaction que insertDemandeJustification ou en ouvre une nouvelle si nécessaire
+        $inTransaction = $pdo->inTransaction();
+        if (!$inTransaction) $pdo->beginTransaction();
+
+        try {
+            // 1. Trouver toutes les absences concernées (INCONNUES ou NON_JUSTIFIEE)
+            // L'intervalle de temps s'étend jusqu'à l'absence la plus récente.
+            $sql_select = "
+                SELECT a.id AS absence_id
+                FROM Absence a
+                JOIN Seance s ON s.id = a.id_seance
+                WHERE a.id_utilisateur = :uid
+                  AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
+                  AND s.date BETWEEN :dd AND :df
+                  -- Exclure celles déjà couvertes par une SOUMISSION acceptée/en attente pour éviter les doublons
+                  AND NOT EXISTS (
+                      SELECT 1 FROM JustificatifAbsence ja
+                      JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+                      WHERE ja.id_absence = a.id AND hd.action IN ('SOUMISSION', 'ACCEPTATION')
+                  );
+            ";
+            $st_select = $pdo->prepare($sql_select);
+            $st_select->execute([
+                ':uid' => $userId,
+                ':dd'  => $dateDebut,
+                ':df'  => $dateFin,
+            ]);
+            $absenceIds = $st_select->fetchAll(\PDO::FETCH_COLUMN);
+
+            if (empty($absenceIds)) {
+                if (!$inTransaction) $pdo->commit();
+                return 0; // Aucune absence à lier
+            }
+
+            // 2. Lier le justificatif et mettre à jour le statut de l'absence
+            $count = 0;
+            $st_link = $pdo->prepare("INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (:j,:a) ON CONFLICT DO NOTHING");
+            $st_update_abs = $pdo->prepare("UPDATE Absence SET justification = 'INCONNU' WHERE id = :a AND id_utilisateur = :u");
+
+            foreach ($absenceIds as $absenceId) {
+                $st_link->execute([':j' => $justifId, ':a' => (int)$absenceId]);
+                $st_update_abs->execute([':a' => (int)$absenceId, ':u' => $userId]);
+                $count++;
+            }
+
+            if (!$inTransaction) $pdo->commit();
+            return $count;
+
+        } catch (\Throwable $e) {
+            if (!$inTransaction) $pdo->rollBack();
+            // Si c'était déjà en transaction, l'exception sera propagée et gérée par l'appelant
             throw $e;
         }
     }
@@ -308,77 +372,67 @@ final class AbsenceModel
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-
-    public static function getAbsencesForInitialReminder(): array
+    /**
+     * US6 - Log la décision du RP et met à jour le statut de l'absence liée.
+     * @param int $justifId L'ID du justificatif concerné.
+     * @param int $rpId L'ID de l'auteur (RP).
+     * @param string $action L'action ('ACCEPTATION', 'REJET', etc.)
+     * @param string $motif La raison de la décision.
+     * @return bool
+     * @throws \Exception
+     */
+    public static function logRpDecision(int $justifId, int $rpId, string $action, string $motif): bool
     {
+        $pdo = db();
+        $pdo->beginTransaction();
 
-        $sql = "
-            SELECT
-                a.id AS absence_id,
-                u.email, u.nom, u.prenom, s.date, s.heure, e.libelle AS motif_seance
-            FROM Absence a
-            JOIN Utilisateur u ON u.id = a.id_utilisateur
-            JOIN Seance s ON s.id = a.id_seance
-            JOIN Enseignement e ON e.id = s.id_enseignement
-            WHERE a.presence = 'ABSENT'
-              AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
-              -- Délai T+1h est passé (déclenchement du rappel)
-              AND (s.date + s.heure) < (NOW() - '1 hour'::interval)
-              -- Le délai légal de 48h n'est PAS encore passé
-              AND (s.date + s.heure) > (NOW() - '48 hours'::interval)
-              AND NOT EXISTS (
-                  SELECT 1 FROM JustificatifAbsence ja
-                  JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                  WHERE ja.id_absence = a.id AND hd.action = 'SOUMISSION'
-              )
-            LIMIT 50
-        ";
+        try {
+            // 1. Loguer la nouvelle décision
+            $st_log = $pdo->prepare("
+                INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision)
+                VALUES (:action, :j, :auteur, :motif_decision)
+            ");
+            $st_log->execute([
+                ':action'         => $action,
+                ':j'              => $justifId,
+                ':auteur'         => $rpId,
+                ':motif_decision' => $motif
+            ]);
 
-        $st = db()->prepare($sql);
-        $st->execute();
-        return $st->fetchAll(\PDO::FETCH_ASSOC);
-    }
+            // 2. Mettre à jour le statut 'justification' de l'Absence
+            $newJustifStatus = match ($action) {
+                'ACCEPTATION' => 'JUSTIFIEE',
+                'REJET' => 'NON_JUSTIFIEE',
+                // DEMANDE_PRECISIONS, AUTORISATION_RENVOI, etc. conservent un statut INCONNU pour l'étudiant
+                default => 'INCONNU',
+            };
 
+            // Appliquer le statut à toutes les absences liées à ce justificatif
+            $st_update_abs = $pdo->prepare("
+                UPDATE Absence a
+                SET justification = :new_status
+                FROM JustificatifAbsence ja
+                WHERE ja.id_absence = a.id AND ja.id_justificatif = :j
+            ");
+            $st_update_abs->execute([':new_status' => $newJustifStatus, ':j' => $justifId]);
 
-    public static function getAbsencesForReturnReminder(): array
-    {
-        $sql = "
-            SELECT
-                a.id AS absence_id,
-                u.email, u.nom, u.prenom, s.date AS absence_date, s.heure AS absence_heure, e.libelle AS motif_seance,
-                (
-                    SELECT MIN(s_return.date + s_return.heure)
-                    FROM Absence a_return
-                    JOIN Seance s_return ON s_return.id = a_return.id_seance
-                    WHERE a_return.id_utilisateur = a.id_utilisateur
-                      AND a_return.presence = 'PRESENT'
-                      -- La session de retour doit être APRES la session d'absence
-                      AND s_return.date > s.date 
-                ) AS date_de_retour_effectif
-            FROM Absence a
-            JOIN Utilisateur u ON u.id = a.id_utilisateur
-            JOIN Seance s ON s.id = a.id_seance
-            JOIN Enseignement e ON e.id = s.id_enseignement
-            WHERE a.presence = 'ABSENT'
-              AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
-              -- Exclure si déjà soumis
-              AND NOT EXISTS (
-                  SELECT 1 FROM JustificatifAbsence ja JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                  WHERE ja.id_absence = a.id AND hd.action = 'SOUMISSION'
-              )
-              -- DÉCLENCHEUR : Le rappel est envoyé 1h APRES la date de retour effective
-              AND EXISTS (
-                  SELECT 1 FROM Absence a_return
-                  JOIN Seance s_return ON s_return.id = a_return.id_seance
-                  WHERE a_return.id_utilisateur = a.id_utilisateur AND a_return.presence = 'PRESENT' AND s_return.date > s.date
-                  -- Vérifie si le retour (MIN(heure)) est passé de plus d'une heure.
-                  HAVING MIN(s_return.date + s_return.heure) < (NOW() - '1 hour'::interval)
-              )
-            LIMIT 50
-        ";
+            // 3. Gestion du verrouillage (US4)
+            if ($action === 'DEMANDE_PRECISIONS' || $action === 'AUTORISATION_RENVOI' || $action === 'AUTORISATION_HORS_DELAI') {
+                // Déverrouiller/Autoriser le renvoi
+                $st_unlock = $pdo->prepare("UPDATE Justificatif SET verouille = FALSE, verouille_date = NULL WHERE id = :j");
+                $st_unlock->execute([':j' => $justifId]);
+            } else {
+                // Verrouiller (car traité ou soumis sans nécessité de renvoi)
+                $st_lock = $pdo->prepare("UPDATE Justificatif SET verouille = TRUE, verouille_date = NOW() WHERE id = :j");
+                $st_lock->execute([':j' => $justifId]);
+            }
 
-        $st = db()->prepare($sql);
-        $st->execute();
-        return $st->fetchAll(\PDO::FETCH_ASSOC);
+            $pdo->commit();
+            return true;
+
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw new \Exception("Erreur de log de décision RP: " . $e->getMessage(), 0, $e);
+        }
     }
 }

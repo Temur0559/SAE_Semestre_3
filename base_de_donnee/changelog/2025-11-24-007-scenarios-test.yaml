@@ -7,9 +7,11 @@ databaseChangeLog:
             splitStatements: true
             stripComments: true
             sql: |
+              -- Remplacer les [HACHAGE_...] par les VALEURS RÉELLES générées à l'Étape 1
               INSERT INTO Utilisateur (id, identifiant, nom, prenom, email, role, mot_de_passe_hash) VALUES
-              (4, 'prof.test', 'Test', 'Prof', 'prof.test@uphf.fr', 'ENSEIGNANT', 'hash_enseignant')
-              ON CONFLICT (id) DO UPDATE SET identifiant=EXCLUDED.identifiant, role=EXCLUDED.role, email=EXCLUDED.email;
+              (4, 'prof.test', 'Test', 'Prof', 'prof.test@uphf.fr', 'ENSEIGNANT', '[$2y$10$reB1lhr6RPI4vnUGUjzMm.V.aFvF5uMaTSGaAieJi7QN9cQ4jEkn2]'),
+              (5, 'secr.test', 'Test', 'Secr', 'secr.test@uphf.fr', 'SECRETAIRE', '[$2y$10$Xk3IJcDyFiKc1Zz1t8NE0Ok6vCYA0HLZ4ZWzs8NX3W2hUcVdS.rN.]')
+              ON CONFLICT (id) DO UPDATE SET identifiant=EXCLUDED.identifiant, role=EXCLUDED.role, email=EXCLUDED.email, mot_de_passe_hash=EXCLUDED.mot_de_passe_hash;
               
               
               UPDATE HistoriqueDecision SET id_auteur = 3 WHERE id_auteur = 1;
@@ -65,7 +67,7 @@ databaseChangeLog:
               
               
               -- Réinitialisation des séquences
-              ALTER SEQUENCE utilisateur_id_seq RESTART WITH 5;
+              ALTER SEQUENCE utilisateur_id_seq RESTART WITH 6; 
               ALTER SEQUENCE seance_id_seq RESTART WITH 8;
               ALTER SEQUENCE absence_id_seq RESTART WITH 8;
               ALTER SEQUENCE justificatif_id_seq RESTART WITH 6;

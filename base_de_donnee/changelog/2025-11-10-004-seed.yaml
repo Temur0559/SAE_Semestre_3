@@ -8,10 +8,11 @@ databaseChangeLog:
             splitStatements: true
             stripComments: true
             sql: |
+              
               INSERT INTO utilisateur (id, identifiant, nom, prenom, email, date_naissance, ine, role, mot_de_passe_hash) VALUES
-              (1,'abdelwaheb.chakour','Chakour','Abdelwaheb','abdelwaheb.chakour@uphf.fr','2005-02-12','INE-ABDEL-0001','ETUDIANT','hash_etudiant'),
-              (2,'marie.dupont','Dupont','Marie','marie.dupont@uphf.fr','2004-09-21','INE-MARIE-0002','ETUDIANT','hash_etudiant'),
-              (3,'julien.vion','Vion','Julien','julien.vion@uphf.fr','1985-06-03',NULL,'RESPONSABLE','hash_responsable')
+              (1,'abdelwaheb.chakour','Chakour','Abdelwaheb','abdelwaheb.chakour@uphf.fr','2005-02-12','INE-ABDEL-0001','ETUDIANT','[$2y$10$uCVixB0M6VW3/Dfxfzd9vuR9p2dH5d0MbQLRH0NUQObvb6KrIjdvi]'),
+              (2,'marie.dupont','Dupont','Marie','marie.dupont@uphf.fr','2004-09-21','INE-MARIE-0002','ETUDIANT','[$2y$10$uCVixB0M6VW3/Dfxfzd9vuR9p2dH5d0MbQLRH0NUQObvb6KrIjdvi]'),
+              (3,'julien.vion','Vion','Julien','julien.vion@uphf.fr','1985-06-03',NULL,'RESPONSABLE','[$2y$10$cWa8tXRZPmTuDAhRoaGte.KgF9xFeC1njkO/07YIOIhJMIMAEVaBm]')
               ON CONFLICT (id) DO UPDATE SET identifiant=EXCLUDED.identifiant;
 
               INSERT INTO programme (id, libelle, composante, public) VALUES
