@@ -225,7 +225,6 @@ final class AbsenceModel
     }
 
 
-
     public static function insertDemandeJustification(
         $userId,
         string $dateDebut,
@@ -434,5 +433,35 @@ final class AbsenceModel
             $pdo->rollBack();
             throw new \Exception("Erreur de log de décision RP: " . $e->getMessage(), 0, $e);
         }
+    }
+
+
+    public static function getAbsencesForInitialReminder(): array
+    {
+        $sql = "
+            SELECT u.email, u.nom, u.prenom, s.date, e.libelle AS motif_seance
+            FROM Absence a
+            JOIN Utilisateur u ON u.id = a.id_utilisateur
+            JOIN Seance s ON s.id = a.id_seance
+            JOIN Enseignement e ON e.id = s.id_enseignement
+            WHERE a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
+              AND s.date < CURRENT_DATE - INTERVAL '1 day' -- Absence d'il y a plus de 24h
+              AND s.date > CURRENT_DATE - INTERVAL '3 days' -- Limite pour éviter d'envoyer des rappels trop anciens
+              AND NOT EXISTS (
+                  SELECT 1 FROM JustificatifAbsence ja
+                  JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+                  WHERE ja.id_absence = a.id
+              )
+        ";
+        $st = db()->prepare($sql);
+        $st->execute();
+        return $st->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+
+    public static function getAbsencesForReturnReminder(): array
+    {
+
+        return [];
     }
 }

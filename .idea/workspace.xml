@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Ajout du hachage et correction de la soumission de justificatif" />
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Ajout du hachage et correction de la soumission de justificatif">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base_de_donnee/liquibase.properties" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/liquibase.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -135,7 +140,7 @@
       <workItem from="1763973873451" duration="759000" />
       <workItem from="1763974806626" duration="677000" />
       <workItem from="1763975645093" duration="2391000" />
-      <workItem from="1764065419436" duration="2627000" />
+      <workItem from="1764065419436" duration="4130000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -193,7 +198,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764067880415</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Ajout du hachage et correction de la soumission de justificatif">
+      <option name="closed" value="true" />
+      <created>1764068144819</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1764068144819</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

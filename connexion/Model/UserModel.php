@@ -40,7 +40,7 @@ final class UserModel {
             return $user;
         }
 
-        // Le bloc de rétrocompatibilité a été supprimé.
+        // Le code de rétrocompatibilité a été supprimé.
         return null;
     }
 }
