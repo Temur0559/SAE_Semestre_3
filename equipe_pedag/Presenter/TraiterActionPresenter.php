@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../model/ActionModel.php';
 
-class RevenirDecisionPresenter {
+class TraiterActionPresenter {
 
     private PDO $pdo;
     private ActionModel $actionModel;
@@ -16,7 +16,7 @@ class RevenirDecisionPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: historique.php');
@@ -32,7 +32,7 @@ class RevenirDecisionPresenter {
         // données envoyées
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $actionDemandee = $_POST['action'] ?? '';
-        $motif          = trim($_POST['motif'] ?? '');
+        $motif          = trim($_POST['motifDecision'] ?? ''); // Correction pour utiliser 'motifDecision' comme dans index.php
         $idAuteur       = 3; // responsable connecté
         $redirect       = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'historique.php');
 
@@ -45,14 +45,14 @@ class RevenirDecisionPresenter {
             exit;
         }
 
-        
+
         $this->actionModel->ajouter_decision(
             $idJustificatif,
             $actionDemandee,
             ($motif !== '' ? $motif : null),
             $idAuteur);
 
-        
+
         if (
             $actionDemandee === 'DEMANDE_PRECISIONS' ||
             $actionDemandee === 'AUTORISATION_RENVOI' ||
@@ -62,7 +62,12 @@ class RevenirDecisionPresenter {
         }
 
         if ($actionDemandee === 'ACCEPTATION') {
-            $this->actionModel->marquer_comme_justifiee($idJustificatif);
+            $this->actionModel->marquer_absence_justifiee($idJustificatif); // CORRIGÉ: Ancien nom était marquer_comme_justifiee
+        }
+
+        // Si l'action est REJET, le Presenter RejetPresenter est censé être appelé, mais par sécurité on pourrait ajouter le verrouillage ici, bien que l'action TraiterActionPresenter soit utilisée uniquement pour l'ACCEPTATION dans la vue IndexView fournie.
+        if ($actionDemandee === 'REJET') {
+            $this->actionModel->verrouiller($idJustificatif);
         }
 
         // redirection
@@ -70,4 +75,3 @@ class RevenirDecisionPresenter {
         exit;
     }
 }
-

@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../model/ActionModel.php';
 
-class VerrouillerPresenter {
+class VerouillerPresenter { // CORRIGÉ
 
     private PDO $pdo;
     private ActionModel $actionModel;
@@ -16,7 +16,7 @@ class VerrouillerPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php');
@@ -36,7 +36,7 @@ class VerrouillerPresenter {
             exit;
         }
 
-        
+
         $this->actionModel->verrouiller($idJustificatif);
 
         // redirection

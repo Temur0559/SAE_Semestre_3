@@ -23,8 +23,8 @@ class JustificatifInfosModel {
                 Justificatif.type_mime,
                 Justificatif.date_soumission,
                 Justificatif.id_utilisateur,
-                Justificatif.verrouille,
-                Justificatif.verrouille_date
+                Justificatif.verouille,       -- CORRIGÉ: verouille (un seul 'r')
+                Justificatif.verouille_date   -- CORRIGÉ: verouille_date (un seul 'r')
 
             FROM JustificatifAbsence
             JOIN Justificatif
@@ -70,8 +70,8 @@ class JustificatifInfosModel {
     dernier_justificatif.nom_fichier_original,
     dernier_justificatif.type_mime,
     dernier_justificatif.date_soumission,
-    dernier_justificatif.verrouille,
-    dernier_justificatif.verrouille_date,
+    dernier_justificatif.verouille,     -- CORRIGÉ
+    dernier_justificatif.verouille_date,  -- CORRIGÉ
 
     derniere_decision.action,
     derniere_decision.motif_decision

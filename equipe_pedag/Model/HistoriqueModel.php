@@ -8,44 +8,44 @@ class HistoriqueModel {
         $this->pdo = $pdo;
     }
 
-    
+
     private function construireFiltres(string $filtrerTexte,string $filtrerDecision,string $filtrerDate1,string $filtrerDate2): array {
 
-    $conditions = [];
-    $params = [];
+        $conditions = [];
+        $params = [];
 
-    // filtre par nom/prenom
-    if ($filtrerTexte !== '') {
-        $conditions[] = "(Utilisateur.nom ILIKE :filtreTexte OR Utilisateur.prenom ILIKE :filtreTexte)";
-        $params[':filtreTexte'] = "%$filtrerTexte%";
+        // filtre par nom/prenom
+        if ($filtrerTexte !== '') {
+            $conditions[] = "(Utilisateur.nom ILIKE :filtreTexte OR Utilisateur.prenom ILIKE :filtreTexte)";
+            $params[':filtreTexte'] = "%$filtrerTexte%";
+        }
+
+        // filtrer par la décisionq qu'on selectionne
+        if ($filtrerDecision !== 'toutes') {
+            $conditions[] = "HistoriqueDecision.action = :filtreDecision";
+            $params[':filtreDecision'] = $filtrerDecision;
+        }
+
+        // filtre par la date de debut qu'on met
+        if ($filtrerDate1 !== '') {
+            $conditions[] = "HistoriqueDecision.date_action >= :dateMin";
+            $params[':dateMin'] = $filtrerDate1 . " 00:00:00";
+        }
+
+        // filtre par la dae max qu'on met
+        if ($filtrerDate2 !== '') {
+            $conditions[] = "HistoriqueDecision.date_action <= :dateMax";
+            $params[':dateMax'] = $filtrerDate2 . " 23:59:59";
+        }
+
+        // requete de notre filtre
+        $where = "";
+        if (!empty($conditions)) {
+            $where = "WHERE " . implode(" AND ", $conditions);
+        }
+
+        return [$where, $params];
     }
-
-    // filtrer par la décisionq qu'on selectionne
-    if ($filtrerDecision !== 'toutes') {
-        $conditions[] = "HistoriqueDecision.action = :filtreDecision";
-        $params[':filtreDecision'] = $filtrerDecision;
-    }
-
-    // filtre par la date de debut qu'on met
-    if ($filtrerDate1 !== '') {
-        $conditions[] = "HistoriqueDecision.date_action >= :dateMin";
-        $params[':dateMin'] = $filtrerDate1 . " 00:00:00";
-    }
-
-    // filtre par la dae max qu'on met
-    if ($filtrerDate2 !== '') {
-        $conditions[] = "HistoriqueDecision.date_action <= :dateMax";
-        $params[':dateMax'] = $filtrerDate2 . " 23:59:59";
-    }
-
-    // requete de notre filtre
-    $where = "";
-    if (!empty($conditions)) {
-        $where = "WHERE " . implode(" AND ", $conditions);
-    }
-
-    return [$where, $params];
-}
 
 
 
@@ -71,8 +71,8 @@ class HistoriqueModel {
 
 
 
-    
-    public function filtrer_pagination(string $filtrerTexte,string $filtrerDecision,string $filtrerDate1,string $filtrerDate2,int $elements,int $debut): array {
+
+    public function get(string $filtrerTexte,string $filtrerDecision,string $filtrerDate1,string $filtrerDate2,int $elements,int $debut): array { // Renommé 'filtrer_pagination' en 'get' pour correspondre à l'utilisation dans HistoriquePresenter.php
 
         list($where, $params) = $this->construireFiltres($filtrerTexte, $filtrerDecision, $filtrerDate1, $filtrerDate2);
 

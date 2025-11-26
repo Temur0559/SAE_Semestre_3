@@ -16,9 +16,9 @@ class RevenirDecisionPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
-        
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: historique.php');
             exit;
@@ -30,7 +30,7 @@ class RevenirDecisionPresenter {
             exit("erreur csrf");
         }
 
-        
+
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $nouvelleAction = $_POST['action'] ?? '';
         $motif = trim($_POST['motif'] ?? '');
@@ -54,7 +54,7 @@ class RevenirDecisionPresenter {
             $idAuteur
         );
 
-        
+
         if (in_array($nouvelleAction, [
             'DEMANDE_PRECISIONS',
             'AUTORISATION_RENVOI',
@@ -66,7 +66,7 @@ class RevenirDecisionPresenter {
 
         if ($nouvelleAction === 'ACCEPTATION') {
             // marquer absence comme justifiée
-            $this->actionModel->marquer_absence_justifiee($idJustificatif);
+            $this->actionModel->marquer_absence_justifiee($idJustificatif); // Utilisation de la méthode corrigée
         }
 
         if ($nouvelleAction === 'REJET') {
@@ -79,4 +79,3 @@ class RevenirDecisionPresenter {
         exit;
     }
 }
-

@@ -1,9 +1,11 @@
 <?php
+
+
 session_start();
 
 
 require_once __DIR__ . '/../connexion/config/db.php';
-$pdo = db();   
+$pdo = db();
 
 
 $page = $_GET['page'] ?? 'index';
@@ -16,8 +18,9 @@ switch ($page) {
         break;
 
     case 'detail':
-        require __DIR__ . '/Presenter/DetailPresenter.php';
-        $presenter = new DetailPresenter($pdo);
+        // Remplacement par IndexPresenter par défaut si DetailPresenter n'est pas fourni.
+        require __DIR__ . '/Presenter/IndexPresenter.php';
+        $presenter = new IndexPresenter($pdo);
         break;
 
     case 'justificatif_detail':
@@ -46,11 +49,13 @@ switch ($page) {
         break;
 
     case 'verouiller':
+        // CORRIGÉ: Nom de fichier VerouillerPresenter
         require __DIR__ . '/Presenter/VerouillerPresenter.php';
         $presenter = new VerouillerPresenter($pdo);
         break;
 
     case 'deverouiller':
+        // CORRIGÉ: Nom de fichier DeverouillerPresenter
         require __DIR__ . '/Presenter/DeverouillerPresenter.php';
         $presenter = new DeverouillerPresenter($pdo);
         break;

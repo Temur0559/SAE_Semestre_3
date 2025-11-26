@@ -9,7 +9,7 @@ class IndexPresenter {
 
     public function __construct(PDO $pdo) {
 
-        
+
         $this->pdo = $pdo;
 
         $this->model = new JustificatifInfosModel($this->pdo);
@@ -17,7 +17,7 @@ class IndexPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start() a été déplacé dans index.php
 
         // crs
         $token = $_SESSION['csrf'] ?? null;
@@ -35,7 +35,7 @@ class IndexPresenter {
         // stock le resultat du filtre
         $justificatifsFiltres = [];
 
-        
+
         foreach ($rowsAll as $ligne) {
 
             if (empty($ligne['id'])) continue;
@@ -60,7 +60,8 @@ class IndexPresenter {
             }
         }
 
-        require __DIR__ . '/../View/IndexView.php';
+        // CORRECTION DE LA LIGNE 63 : Changement de 'IndexView.php' à 'index.php'
+        require __DIR__ . '/../View/index.php';
         $view = new IndexView();
         $view->render($justificatifsFiltres, $compteurs, $ongletActif, $selected, $token);
     }

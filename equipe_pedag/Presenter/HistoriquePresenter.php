@@ -9,11 +9,11 @@ class HistoriquePresenter {
 
     public function __construct() {
 
-        
+
         require __DIR__ . '/../config/db.php';
         $this->pdo = $pdo;
 
-        
+
         $this->modele = new HistoriqueModel($this->pdo);
     }
 
@@ -27,7 +27,7 @@ class HistoriquePresenter {
         $pageActuelle = max(1, (int)($_GET['page'] ?? 1));
 
         // pagination
-        $parPage = 20; 
+        $parPage = 20;
         $depart  = ($pageActuelle - 1) * $parPage;
 
 
@@ -35,7 +35,7 @@ class HistoriquePresenter {
 
         // recupère les infos dans Model
         $total  = $this->modele->count($recherche, $typeAction, $dateMin, $dateMax);
-        $lignes = $this->modele->get($recherche, $typeAction, $dateMin, $dateMax, $parPage, $depart);
+        $lignes = $this->modele->get($recherche, $typeAction, $dateMin, $dateMax, $parPage, $depart); // Remplacement de filtrer_pagination par get
 
         //calcul du nbre de pages total
         $nbPages = max(1, (int)ceil($total / $parPage));

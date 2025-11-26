@@ -16,9 +16,9 @@ class RejetPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
-        
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php');
             exit;
@@ -30,7 +30,7 @@ class RejetPresenter {
             exit("Requête invalide (CSRF).");
         }
 
-        
+
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $motif = trim($_POST['motifDecision'] ?? '');
         $idAuteur = 3; // responsable connecté
@@ -57,4 +57,3 @@ class RejetPresenter {
         exit;
     }
 }
-

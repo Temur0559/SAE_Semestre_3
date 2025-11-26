@@ -9,7 +9,7 @@ class FichierJustificatifModel {
     }
 
 
-    
+
     // pour récuperation du fichier d'un justificatif
 
     public function fichier_justif(int $id) {

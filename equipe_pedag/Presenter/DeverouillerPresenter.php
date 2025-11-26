@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../model/ActionModel.php';
 
 // recoit la requête du bouton quand on clique sur deverouiller
-class DeverrouillerPresenter {
+class DeverouillerPresenter {
 
     private PDO $pdo;
     private ActionModel $actionModel;
@@ -17,7 +17,7 @@ class DeverrouillerPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
         // verification pour accepter uniquement les requetes post
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

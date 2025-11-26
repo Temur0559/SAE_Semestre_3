@@ -22,20 +22,29 @@ class ActionModel {
         ]);
     }
 
-   
+
     // pour deverouille un justificatif 
 
     public function deverouille(int $id) {
 
-        $sql = "UPDATE Justificatif SET verrouille = FALSE, verrouille_date = NULL, date_maj = NOW() WHERE id = :id";
+        $sql = "UPDATE Justificatif SET verouille = FALSE, verouille_date = NULL, date_maj = NOW() WHERE id = :id"; // CORRIGÉ
         $st = $this->pdo->prepare($sql);
         $st->execute([':id' => $id]);
     }
 
 
+    // pour verrouiller un justificatif (Ajouté)
 
-    // marque une absence justifiée quand on l'accepte dans la bdd
-    public function absence_acceptee(int $justifId) {
+    public function verrouiller(int $id) {
+
+        $sql = "UPDATE Justificatif SET verouille = TRUE, verouille_date = NOW(), date_maj = NOW() WHERE id = :id"; // CORRIGÉ
+        $st = $this->pdo->prepare($sql);
+        $st->execute([':id' => $id]);
+    }
+
+
+    // marque une absence justifiée quand on l'accepte dans la bdd (Renommée en marquer_absence_justifiee)
+    public function marquer_absence_justifiee(int $justifId) { // RENOMMÉ
 
         $sql = "SELECT JustificatifAbsence.id_absence FROM JustificatifAbsence WHERE JustificatifAbsence.id_justificatif = :id";
 
@@ -45,7 +54,7 @@ class ActionModel {
         $abs = $st->fetch();
 
         if (!$abs) {
-            return; 
+            return;
         }
 
         $sql2 = "UPDATE Absence SET justification = 'JUSTIFIEE', commentaire = NULL WHERE id = :id";
@@ -54,4 +63,3 @@ class ActionModel {
         $st2->execute([':id' => $abs['id_absence']]);
     }
 }
-

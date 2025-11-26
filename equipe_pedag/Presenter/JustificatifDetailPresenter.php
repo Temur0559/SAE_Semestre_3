@@ -16,7 +16,7 @@ class JustificatifDetailPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
         // récup l'id du justificatif
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;

@@ -16,7 +16,7 @@ class PrecisionsPresenter {
 
     public function handle() {
 
-        session_start();
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
         // accepte uniquement POST
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -57,4 +57,3 @@ class PrecisionsPresenter {
         exit;
     }
 }
-
