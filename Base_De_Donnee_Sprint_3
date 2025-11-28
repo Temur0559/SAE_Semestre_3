@@ -1,0 +1,779 @@
+-- Suppression des tables (CASCADE gère les dépendances de clés étrangères)
+DROP TABLE IF EXISTS HistoriqueDecision CASCADE;
+DROP TABLE IF EXISTS JustificatifAbsence CASCADE;
+DROP TABLE IF EXISTS Justificatif CASCADE;
+DROP TABLE IF EXISTS Absence CASCADE;
+DROP TABLE IF EXISTS Seance CASCADE;
+DROP TABLE IF EXISTS enseignantressource CASCADE;
+DROP TABLE IF EXISTS Enseignement CASCADE;
+DROP TABLE IF EXISTS Matiere CASCADE;
+DROP TABLE IF EXISTS Programme CASCADE;
+DROP TABLE IF EXISTS Utilisateur CASCADE;
+
+-- Suppression des types ENUM (au cas où le script est rejoué)
+DROP TYPE IF EXISTS Role CASCADE;
+DROP TYPE IF EXISTS TypeDecision CASCADE;
+DROP TYPE IF EXISTS PresenceEtat CASCADE;
+DROP TYPE IF EXISTS JustifEtat CASCADE;
+
+
+-- Création des types ENUM uniquement s'ils n'existent pas déjà
+DO $$
+BEGIN
+  -- Rôle d'un utilisateur dans l'appli
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+    CREATE TYPE Role AS ENUM ('ETUDIANT','ENSEIGNANT','RESPONSABLE','SECRETAIRE');
+  END IF;
+
+  -- Type d'action / décision sur un justificatif
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'typedecision') THEN
+    CREATE TYPE TypeDecision AS ENUM('SOUMISSION','DEMANDE_PRECISIONS','RENVOI_FICHIER','ACCEPTATION','REJET','AUTORISATION_RENVOI','AUTORISATION_HORS_DELAI');
+  END IF;
+
+  -- État de présence à une séance
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'presenceetat') THEN
+    CREATE TYPE PresenceEtat AS ENUM ('ABSENT','PRESENT');
+  END IF;
+
+  -- État de justification d'une absence
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'justifetat') THEN
+    CREATE TYPE JustifEtat AS ENUM ('JUSTIFIEE','NON_JUSTIFIEE','INCONNU');
+  END IF;
+END;
+$$;
+
+
+-- TABLES PRINCIPALES
+-- ===================
+
+-- Table des utilisateurs : étudiants + enseignants + responsable + secrétaire
+CREATE TABLE Utilisateur (
+  id                SERIAL PRIMARY KEY,
+  identifiant       TEXT NOT NULL UNIQUE, -- login / identifiant unique
+  nom               TEXT NOT NULL,
+  prenom            TEXT NOT NULL,
+  prenom2           TEXT,                 -- deuxième prénom éventuel
+  date_naissance    DATE,
+  email             TEXT NOT NULL UNIQUE, -- email unique
+  ine               TEXT,                 -- numéro INE pour les étudiants
+  mot_de_passe_hash TEXT NOT NULL,        -- mot de passe hashé (ex : bcrypt)
+  role              Role NOT NULL DEFAULT 'ETUDIANT' -- rôle applicatif
+);
+
+-- Table des programmes de formation (ex : BUT Info FI)
+CREATE TABLE Programme (
+  id         SERIAL PRIMARY KEY,
+  libelle    TEXT NOT NULL,                -- nom du programme
+  composante TEXT NOT NULL,                -- ex : IUT, UFR, etc.
+  public     TEXT NOT NULL,                -- ex : FI / FA / FC
+  UNIQUE (libelle, composante, public)     -- un programme unique par triplet
+);
+
+-- Table des matières “académiques” (Analyse 1, Physique, etc.)
+CREATE TABLE Matiere (
+  id      SERIAL PRIMARY KEY,
+  code    TEXT NOT NULL UNIQUE, -- code matière (MAT101, INFO201…)
+  libelle TEXT NOT NULL         -- libellé lisible
+);
+
+-- Table des enseignements (CM/TD/TP, SAÉ, etc.), liés à une matière
+CREATE TABLE Enseignement (-- Suppression des tables (CASCADE gère les dépendances de clés étrangères)
+DROP TABLE IF EXISTS HistoriqueDecision CASCADE;
+DROP TABLE IF EXISTS JustificatifAbsence CASCADE;
+DROP TABLE IF EXISTS Justificatif CASCADE;
+DROP TABLE IF EXISTS Absence CASCADE;
+DROP TABLE IF EXISTS Seance CASCADE;
+DROP TABLE IF EXISTS enseignantressource CASCADE;
+DROP TABLE IF EXISTS Enseignement CASCADE;
+DROP TABLE IF EXISTS Matiere CASCADE;
+DROP TABLE IF EXISTS Programme CASCADE;
+DROP TABLE IF EXISTS Utilisateur CASCADE;
+
+-- Suppression des types ENUM (au cas où le script est rejoué)
+DROP TYPE IF EXISTS Role CASCADE;
+DROP TYPE IF EXISTS TypeDecision CASCADE;
+DROP TYPE IF EXISTS PresenceEtat CASCADE;
+DROP TYPE IF EXISTS JustifEtat CASCADE;
+
+
+-- Création des types ENUM uniquement s'ils n'existent pas déjà
+DO $$
+BEGIN
+  -- Rôle d'un utilisateur dans l'appli
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+    CREATE TYPE Role AS ENUM ('ETUDIANT','ENSEIGNANT','RESPONSABLE','SECRETAIRE');
+  END IF;
+
+  -- Type d'action / décision sur un justificatif
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'typedecision') THEN
+    CREATE TYPE TypeDecision AS ENUM('SOUMISSION','DEMANDE_PRECISIONS','RENVOI_FICHIER','ACCEPTATION','REJET','AUTORISATION_RENVOI','AUTORISATION_HORS_DELAI');
+  END IF;
+
+  -- État de présence à une séance
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'presenceetat') THEN
+    CREATE TYPE PresenceEtat AS ENUM ('ABSENT','PRESENT');
+  END IF;
+
+  -- État de justification d'une absence
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'justifetat') THEN
+    CREATE TYPE JustifEtat AS ENUM ('JUSTIFIEE','NON_JUSTIFIEE','INCONNU');
+  END IF;
+END;
+$$;
+
+
+-- TABLES PRINCIPALES
+-- ===================
+
+-- Table des utilisateurs : étudiants + enseignants + responsable + secrétaire
+CREATE TABLE Utilisateur (
+  id                SERIAL PRIMARY KEY,
+  identifiant       TEXT NOT NULL UNIQUE, -- login / identifiant unique
+  nom               TEXT NOT NULL,
+  prenom            TEXT NOT NULL,
+  prenom2           TEXT,                 -- deuxième prénom éventuel
+  date_naissance    DATE,
+  email             TEXT NOT NULL UNIQUE, -- email unique
+  ine               TEXT,                 -- numéro INE pour les étudiants
+  mot_de_passe_hash TEXT NOT NULL,        -- mot de passe hashé (ex : bcrypt)
+  role              Role NOT NULL DEFAULT 'ETUDIANT' -- rôle applicatif
+);
+
+-- Table des programmes de formation (ex : BUT Info FI)
+CREATE TABLE Programme (
+  id         SERIAL PRIMARY KEY,
+  libelle    TEXT NOT NULL,                -- nom du programme
+  composante TEXT NOT NULL,                -- ex : IUT, UFR, etc.
+  public     TEXT NOT NULL,                -- ex : FI / FA / FC
+  UNIQUE (libelle, composante, public)     -- un programme unique par triplet
+);
+
+-- Table des matières “académiques” (Analyse 1, Physique, etc.)
+CREATE TABLE Matiere (
+  id      SERIAL PRIMARY KEY,
+  code    TEXT NOT NULL UNIQUE, -- code matière (MAT101, INFO201…)
+  libelle TEXT NOT NULL         -- libellé lisible
+);
+
+-- Table des enseignements (CM/TD/TP, SAÉ, etc.), liés à une matière
+CREATE TABLE Enseignement (
+  id         SERIAL PRIMARY KEY,
+  code       TEXT NOT NULL UNIQUE, -- code unique de l’enseignement
+  libelle    TEXT NOT NULL,
+  id_matiere INT REFERENCES Matiere(id) ON DELETE SET NULL -- matière associée
+);
+
+-- Table des séances (instances datées d’enseignements)
+CREATE TABLE Seance (
+  id              SERIAL PRIMARY KEY,
+  id_vt           TEXT,                    -- identifiant VT (emploi du temps externe)
+  date            DATE NOT NULL,           -- date de la séance
+  heure           TIME NOT NULL,           -- heure de début
+  duree           INTERVAL NOT NULL,       -- durée (ex: '2 hours')
+  type            TEXT NOT NULL,           -- type : CM/TD/TP/DS…
+  id_programme    INT REFERENCES Programme(id) ON DELETE SET NULL,
+  id_enseignement INT REFERENCES Enseignement(id) ON DELETE SET NULL,
+  groupes         TEXT,                    -- description des groupes (G1, G2…)
+  salles          TEXT,                    -- salles utilisées
+  profs           TEXT,                    -- noms / infos profs (non normalisé ici)
+  controle        BOOLEAN NOT NULL DEFAULT FALSE, -- vrai si c'est un contrôle / DS
+  UNIQUE (date, heure, duree, id_enseignement, id_programme) -- évite les doublons
+);
+
+-- Table des absences : lien entre un étudiant et une séance
+CREATE TABLE Absence (
+  id             SERIAL PRIMARY KEY,
+  id_utilisateur INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE, -- étudiant
+  id_seance      INT NOT NULL REFERENCES Seance(id) ON DELETE CASCADE,      -- séance
+  presence       PresenceEtat NOT NULL DEFAULT 'ABSENT',  -- présent/absent
+  justification  JustifEtat   NOT NULL DEFAULT 'INCONNU', -- justifiée ou non
+  motif          TEXT,                                    -- motif textuel
+  commentaire    TEXT,                                    -- commentaire interne
+  UNIQUE (id_utilisateur, id_seance)                     -- max 1 ligne par séance et étudiant
+);
+
+-- Table des justificatifs (fichiers déposés par les utilisateurs)
+CREATE TABLE Justificatif (
+  id                   SERIAL PRIMARY KEY,
+  fichier              BYTEA,                 -- contenu binaire du fichier
+  commentaire          TEXT,                  -- commentaire du déposant ou interne
+  date_soumission      TIMESTAMP NOT NULL DEFAULT NOW(),
+  date_maj             TIMESTAMP NOT NULL DEFAULT NOW(), -- MAJ du justificatif
+  motif_libre          TEXT,                  -- motif libre saisi par l’étudiant
+  id_utilisateur       INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+  nom_fichier_original TEXT,                  -- nom d’origine du fichier
+  type_mime            TEXT,                  -- type MIME (pdf, png, etc.)
+  verouille            BOOLEAN NOT NULL DEFAULT FALSE, -- verrouillage du justificatif
+  verouille_date       TIMESTAMP,             -- date de verrouillage
+  date_debut_demande   DATE,                  -- période d'absence couverte (début)
+  date_fin_demande     DATE                   -- période d'absence couverte (fin)
+);
+
+-- Table de liaison N-N entre justificatif(s) et absence(s)
+CREATE TABLE JustificatifAbsence (
+  id_justificatif INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  id_absence      INT NOT NULL REFERENCES Absence(id) ON DELETE CASCADE,
+  PRIMARY KEY (id_justificatif, id_absence)
+);
+
+-- Historique des décisions prises sur chaque justificatif
+CREATE TABLE HistoriqueDecision (
+  id              SERIAL PRIMARY KEY,
+  action          TypeDecision NOT NULL,         -- type de décision/action
+  date_action     TIMESTAMP NOT NULL DEFAULT NOW(),
+  motif_decision  TEXT,                         -- justification textuelle
+  id_justificatif INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  id_auteur       INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE -- auteur décision
+);
+
+-- Table de liaison Enseignant-Ressource (009-1)
+-- Associe un enseignant (Utilisateur) à une ressource (Enseignement par son code)
+CREATE TABLE enseignantressource (
+    id_enseignant INT NOT NULL REFERENCES utilisateur(id) ON DELETE CASCADE,
+    code_ressource VARCHAR(50) NOT NULL REFERENCES enseignement(code) ON DELETE CASCADE,
+    PRIMARY KEY (id_enseignant, code_ressource) -- un même couple enseignant/ressource unique
+);
+
+
+-- INDEX pour optimiser les recherches
+CREATE INDEX idx_absence_utilisateur ON Absence(id_utilisateur);   -- recherche absences par étudiant
+CREATE INDEX idx_absence_seance      ON Absence(id_seance);        -- recherche absences par séance
+CREATE INDEX idx_justificatif_user   ON Justificatif(id_utilisateur); -- justificatifs par utilisateur
+CREATE INDEX idx_hist_justif         ON HistoriqueDecision(id_justificatif); -- historique par justificatif
+CREATE INDEX idx_seance_programme    ON Seance(id_programme);      -- filtrer les séances par programme
+CREATE INDEX idx_seance_enseignement ON Seance(id_enseignement);   -- filtrer par enseignement
+CREATE UNIQUE INDEX IF NOT EXISTS uq_seance_vt ON Seance(id_vt);   -- id VT unique si présent
+
+
+-- FORÇAGE DE LA RÉINITIALISATION DE LA SÉQUENCE UTILISATEUR
+ALTER SEQUENCE utilisateur_id_seq RESTART WITH 1;
+
+-- Insertion des utilisateurs fixes (IDs 1 à 5)
+-- (ON CONFLICT permet de rejouer le script sans dupliquer)
+INSERT INTO Utilisateur (id, identifiant, nom, prenom, email, date_naissance, ine, role, mot_de_passe_hash) VALUES
+(1,'abdelwaheb.chakour','Chakour','Abdelwaheb','abdelwaheb.chakour@uphf.fr','2005-02-12','INE-ABDEL-0001','ETUDIANT','$2y$10$g81rl97psHiqT0VvLvn1ee0ICcXPveK5Tjc0f7IkjSITc.SBUhVd.'),
+(2,'marie.dupont.etu','Dupont','Marie','marie.dupont@uphf.fr','2004-09-21','INE-MARIE-0002','ETUDIANT','$2y$10$g81rl97psHiqT0VvLvn1ee0ICcXPveK5Tjc0f7IkjSITc.SBUhVd.'),
+(3,'julien.vion','Vion','Julien','julien.vion@uphf.fr','1985-06-03',NULL,'RESPONSABLE','$2y$10$iIlSV.Xz2maTSp20c/B4GeogQtcyyaMbWBY1a4Z/76ZOq2AI23Suu'),
+(4, 'prof.test', 'Test', 'Prof', 'prof.test@uphf.fr', NULL, NULL, 'ENSEIGNANT', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS'),
+(5, 'secr.test', 'Test', 'Secr', 'secr.test@uphf.fr', NULL, NULL, 'SECRETAIRE', '$2y$10$XPJtIr.jawtY2J67WcBROOuUZ2.tJW/LpPUSKkABPbAqrEKbxIuTO')
+ON CONFLICT (id) DO UPDATE SET identifiant=EXCLUDED.identifiant, email=EXCLUDED.email, role=EXCLUDED.role, mot_de_passe_hash=EXCLUDED.mot_de_passe_hash;
+
+-- La prochaine insertion automatique commencera à 6
+ALTER SEQUENCE utilisateur_id_seq RESTART WITH 6; -- Prochain ID pour les insertions non fixées
+
+-- Insertion des professeurs réels (utilisateurs > 5)
+INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES
+('marie.dupont', 'Dupont', 'Marie', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'marie.dupont@iut.fr', 'ENSEIGNANT')
+ON CONFLICT (identifiant) DO UPDATE SET role=EXCLUDED.role;
+
+INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES
+('jean.valjean', 'Valjean', 'Jean', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'jean.valjean@iut.fr', 'ENSEIGNANT')
+ON CONFLICT (identifiant) DO UPDATE SET role=EXCLUDED.role;
+
+INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES
+('sophie.martin', 'Martin', 'Sophie', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'sophie.martin@iut.fr', 'ENSEIGNANT')
+ON CONFLICT (identifiant) DO UPDATE SET role=EXCLUDED.role;
+
+
+-- Programme, Matières
+ALTER SEQUENCE programme_id_seq RESTART WITH 2;
+INSERT INTO Programme (id, libelle, composante, public) VALUES (1,'BUT INFORMATIQUE','IUT','FI') ON CONFLICT (id) DO NOTHING;
+
+ALTER SEQUENCE matiere_id_seq RESTART WITH 4;
+INSERT INTO Matiere (id, code, libelle) VALUES
+(1,'MAT101','Analyse 1'),
+(2,'INFO201','Programmation 2'),
+(3,'PHY301','Physique générale')
+ON CONFLICT (id) DO UPDATE SET code=EXCLUDED.code, libelle=EXCLUDED.libelle;
+
+ALTER SEQUENCE enseignement_id_seq RESTART WITH 4;
+INSERT INTO Enseignement (id, code, libelle, id_matiere) VALUES
+(1,'ENS-MAT101-TD1','Analyse 1 — TD',1),
+(2,'ENS-INFO201-TP','Programmation 2 — TP',2),
+(3,'ENS-PHY301-CM','Physique générale — CM',3)
+ON CONFLICT (id) DO UPDATE SET code=EXCLUDED.code, libelle=EXCLUDED.libelle, id_matiere=EXCLUDED.id_matiere;
+
+-- Insertion d’un gros catalogue d’enseignements BUT (009-2)
+-- NB : ON CONFLICT (code) DO NOTHING pour pouvoir rejouer le script
+INSERT INTO Enseignement (code, libelle, id_matiere) VALUES
+('P1.01', 'Projet Professionnel S1', 1), ('R1.01', 'Initiation au Développement', 1),
+('R1.02', 'Développement Web', 1), ('R1.03', 'Architecture des Ordinateurs', 1),
+('R1.04', 'Bases de Données', 1), ('R1.05', 'Mathématiques Info', 1),
+('R1.06', 'Économie et Gestion', 1), ('R1.07', 'Anglais S1', 1),
+('R1.08', 'Communication S1', 1), ('R1.09', 'Projet Pro S1', 1),
+('R1.10', 'Outils Math S1', 1), ('R1.11', 'Algo/Prog S1', 1),
+('R1.12', 'Systèmes d''Exploitation S1', 1), ('S1.01', 'SAÉ S1.01', 1),
+('S1.02', 'SAÉ S1.02', 1), ('S1.03', 'SAÉ S1.03', 1), ('S1.04', 'SAÉ S1.04', 1),
+('S1.05', 'SAÉ S1.05', 1), ('S1.06', 'SAÉ S1.06', 1),
+('P2.01', 'Projet Professionnel S2', 1), ('R2.01', 'Algorithmique Avancée', 1),
+('R2.02', 'Développement d''Applications', 1), ('R2.03', 'Réseaux', 1),
+('R2.04', 'SQL Avancé', 1), ('R2.05', 'Programmation Système', 1),
+('R2.06', 'Exploitation BD', 1), ('R2.07', 'Gestion de Projet I', 1),
+('R2.08', 'Introduction au Droit', 1), ('R2.09', 'Anglais S2', 1),
+('R2.10', 'Communication S2', 1), ('R2.11', 'Outils Math S2', 1),
+('R2.12', 'Statistiques', 1), ('R2.13', 'Communication Technique', 1),
+('R2.14', 'Initiation à l''IA', 1), ('S2.01', 'SAÉ S2.01', 1),
+('S2.02', 'SAÉ S2.02', 1), ('S2.03', 'SAÉ S2.03', 1), ('S2.04', 'SAÉ S2.04', 1),
+('S2.05', 'SAÉ S2.05', 1), ('S2.06', 'SAÉ S2.06', 1),
+('P3.01', 'Projet Professionnel S3', 1), ('R3.01', 'Développement Back-end', 1),
+('R3.02', 'Analyse et Conception', 1), ('R3.03', 'Algorithmique Avancée II', 1),
+('R3.04.1', 'POO Avancée', 1), ('R3.04.2', 'Programmation Fonctionnelle', 1),
+('R3.05', 'BD Relationnelles', 1), ('R3.06', 'Réseaux Avancés', 1),
+('R3.07', 'Gestion de Projet', 1), ('R3.08', 'Anglais S3', 1),
+('R3.09', 'Communication S3', 1), ('R3.10', 'Mathématiques Appliquées', 1),
+('R3.11', 'Compléments d''Algo', 1), ('R3.12', 'Introduction à l''UX/UI', 1),
+('R3.13', 'SGBD', 1), ('R3.14', 'Technologies Web Avancées', 1),
+('S3.A.01-B.01', 'SAÉ S3 Parcours A/B', 1), ('S3.A.01-B.01.GP', 'SAÉ S3 GP', 1),
+('P4.01', 'Projet Professionnel S4', 1), ('R4.01', 'Architecture Logicielle', 1),
+('R4.02', 'Programmation Distribuée', 1), ('R4.03', 'Qualité de Développement', 1),
+('R4.04', 'Sécurité des Systèmes', 1), ('R4.05', 'Optimisation', 1),
+('R4.06', 'Droit du Numérique', 1), ('R4.07', 'Anglais S4', 1),
+('R4.13', 'Communication Pro S4', 1), ('R4.A.08-B.08', 'Approfondissement BDD', 1),
+('R4.A.09-B.09', 'Approfondissement Systèmes', 1), ('R4.A.10', 'Développement Mobile A', 1),
+('R4.A.11', 'Gestion de Configuration A', 1), ('R4.A.12', 'Front-End Avancé A', 1),
+('R4.B.10', 'Développement Mobile B', 1), ('R4.B.11', 'Gestion de Configuration B', 1),
+('R4.B.12', 'Front-End Avancé B', 1), ('S4.A.01', 'SAÉ S4 Parcours A', 1),
+('S4.A.01-B.01', 'SAÉ S4 Parcours A/B', 1), ('S4.B.01', 'SAÉ S4 Parcours B', 1),
+('P5.A.01-B.01', 'Projet Professionnel S5', 1), ('R5.01', 'Méthodes Agiles', 1),
+('R5.03', 'Développement Sécurisé', 1), ('R5.A.02-B.02', 'Administration BDD', 1),
+('R5.A.04', 'Programmation Web Avancée', 1), ('R5.A.05', 'Cloud Computing', 1),
+('R5.A.06', 'Sécurité Avancée', 1), ('R5.A.07-B.05', 'Business Intelligence', 1),
+('R5.A.08', 'Recherche Opérationnelle', 1), ('R5.A.09-B.07', 'Développement Cross-Platform', 1),
+('R5.A.10', 'Gestion de Projet II', 1), ('R5.A.11', 'Anglais Pro', 1),
+('R5.A.12', 'Communication Pro II', 1), ('R5.A.13-B.11', 'Innovation', 1),
+('R5.A.14-B.12', 'Intelligence Artificielle', 1), ('R5.A.15', 'Méthodes de Test', 1),
+('R5.A.16', 'Gestion des Conflits', 1), ('R5.B.04', 'Analyse de Données', 1),
+('R5.B.06', 'SIG', 1), ('R5.B.08', 'Big Data', 1),
+('R5.B.09', 'Sécurité des Réseaux', 1), ('R5.B.10', 'Développement Backend Avancé', 1),
+('R5.B.13', 'Développement d''API', 1), ('R5.B.14', 'Maintenance Logicielle', 1),
+('R5.MP', 'Stage MP', 1), ('S5.A.01', 'SAÉ S5 Parcours A', 1),
+('S5.A.02', 'SAÉ S5 Parcours A (Option)', 1), ('S5.B.01', 'SAÉ S5 Parcours B', 1),
+('P6.A.01-B.01', 'Projet Professionnel S6', 1), ('R6.01', 'Projet Fin d''Études', 1),
+('R6.02', 'Droit Numérique PI', 1), ('R6.03', 'Management d''Équipe', 1),
+('R6.07', 'Communication Internationale', 1), ('R6.A.04-B.04', 'Sécurité des Applications Web', 1),
+('R6.A.05', 'Développement Avancé', 1), ('R6.A.06', 'DevOps', 1),
+('R6.B.05', 'Data Mining', 1), ('R6.B.06', 'Visualisation de Données', 1),
+('S6.A.01', 'SAÉ S6 Parcours A', 1), ('S6.A.01-B.01', 'SAÉ S6 Parcours A/B', 1),
+('S6.B.01', 'SAÉ S6 Parcours B', 1)
+ON CONFLICT (code) DO NOTHING;
+
+
+-- Attributions des ressources aux enseignants (009-3)
+-- Chaque ligne : un enseignant + un code de ressource enseignée
+INSERT INTO enseignantressource (id_enseignant, code_ressource) VALUES
+((SELECT id FROM utilisateur WHERE identifiant = 'prof.test'), 'R1.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'prof.test'), 'R3.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'prof.test'), 'R4.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'R2.02'),
+((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'R4.02'),
+((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'P5.A.01-B.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'jean.valjean'), 'R3.07'),
+((SELECT id FROM utilisateur WHERE identifiant = 'jean.valjean'), 'R5.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'sophie.martin'), 'R1.02'),
+((SELECT id FROM utilisateur WHERE identifiant = 'sophie.martin'), 'S6.A.01')
+ON CONFLICT (id_enseignant, code_ressource) DO NOTHING;
+
+
+-- Séances de base (jeu de données minimal)
+ALTER SEQUENCE seance_id_seq RESTART WITH 1;
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(1,'2025-10-02','09:00','2 hours','TP',1,2,'G1','B201','Dupont',FALSE),
+(2,'2025-10-03','10:00','1 hour','TD',1,1,'G1','A105','Martin',TRUE),
+(3,'2025-10-05','08:30','1 hour 30 minutes','CM',1,3,'ALL','Amphi','Durand',FALSE),
+(4,'2025-10-06','14:00','1 hour','TD',1,2,'G2','C304','Dupont',FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+-- Scénarios de Test (séances supplémentaires pour tests fonctionnels)
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(5, '2025-11-20', '11:00', '1 hour', 'TD', 1, 1, 'G2', 'B202', 'Martin', FALSE)
+ON CONFLICT (id) DO UPDATE SET date = EXCLUDED.date, heure = EXCLUDED.heure;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(6, CURRENT_DATE, '09:00', '2 hours', 'DS', 1, 2, 'G1', 'A300', 'Dupont', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(7, CURRENT_DATE, '14:00', '1 hour', 'TP', 1, 2, 'G2', 'B203', 'Martin', FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(8, CURRENT_DATE, '10:00', '2 hours', 'DS', 1, (SELECT id FROM Enseignement WHERE code = 'R3.01'), 'G1', 'B101', 'Test Prof', FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(9, CURRENT_DATE, '14:00', '1 hour', 'TD', 1, (SELECT id FROM Enseignement WHERE code = 'R3.07'), 'G2', 'C202', 'Valjean Jean', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+-- Absences de test pour l’utilisateur 1
+ALTER SEQUENCE absence_id_seq RESTART WITH 1;
+INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+(1,1,1,'ABSENT'::PresenceEtat,'INCONNU'::JustifEtat,'Programmation 2','Certificat médical attendu'),
+(2,1,2,'ABSENT'::PresenceEtat,'NON_JUSTIFIEE'::JustifEtat,'Analyse 1','Document illisible'),
+(3,1,3,'ABSENT'::PresenceEtat,'JUSTIFIEE'::JustifEtat,'Physique','Justificatif familial'),
+(4,1,4,'ABSENT'::PresenceEtat,'INCONNU'::JustifEtat,'Programmation 2','Bus non présent'),
+(5, 1, 5, 'ABSENT'::PresenceEtat, 'INCONNU'::JustifEtat, 'Rappel 48h en attente', 'Test US7'),
+(6, 1, 6, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Acceptation Rattrapage', 'Test US8'),
+(7, 1, 7, 'ABSENT'::PresenceEtat, 'INCONNU'::JustifEtat, 'En révision', 'Test US4 Re-upload'),
+(8, 1, 8, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Test DS', 'Test Rattrapage DS'),
+(9, 1, 9, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Test Contrôle', 'Test Prof Filter')
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Justificatifs (exemple de données binaires simplifiées)
+-- Utilisation de decode('HEX', 'hex') pour convertir une chaîne hex en BYTEA
+ALTER SEQUENCE justificatif_id_seq RESTART WITH 1;
+INSERT INTO Justificatif (id, fichier, commentaire, date_soumission, date_maj, motif_libre, id_utilisateur, nom_fichier_original, type_mime) VALUES
+(1, decode('255044', 'hex'), 'Certificat médical', NOW(), NOW(), NULL, 1, 'certificat_medical.pdf', 'application/pdf'),
+(2, decode('89504E47', 'hex'), 'Photo floue', NOW(), NOW(), NULL, 1, 'photo_justif.png', 'image/png'),
+(3, decode('504B03', 'hex'), 'Justificatif compressé', NOW(), NOW(), NULL, 1, 'justif.zip', 'application/zip'),
+(4, decode('255044', 'hex'), 'Justif DS accepté', NOW(), NOW(), 'Maladie', 1, 'justif_ds.pdf', 'application/pdf'),
+(5, decode('255044', 'hex'), 'Justif de base', NOW(), NOW(), 'Autre', 1, 'justif_base.pdf', 'application/pdf'),
+(6, decode('255044', 'hex'), 'Justif DS auto-soumis', NOW(), NOW(), 'Maladie', 1, 'test_rattrapage_ds.pdf', 'application/pdf'),
+(7, decode('255044', 'hex'), 'Justif Contrôle auto-soumis', NOW(), NOW(), 'Autre', 1, 'test_rattrapage_controle.pdf', 'application/pdf')
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Liens Justificatif-Absence (N-N)
+INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES
+(1,1), (2,2), (3,3), (4,6), (5,7), (6,8), (7,9)
+ON CONFLICT DO NOTHING;
+
+
+-- Historique de Décision sur les justificatifs
+ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 1;
+INSERT INTO HistoriqueDecision (id, action, date_action, motif_decision, id_justificatif, id_auteur) VALUES
+(1,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',1,1),
+(2,'ACCEPTATION'::TypeDecision,NOW(),'Certificat accepté',1,3),
+(3,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',2,1),
+(4,'DEMANDE_PRECISIONS'::TypeDecision,NOW(),'Document illisible',2,3),
+(5,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',3,1),
+(6,'REJET'::TypeDecision,NOW(),'Format non accepté',3,3),
+(7, 'ACCEPTATION'::TypeDecision, NOW(), 'Justificatif validé par RP', 4, 3),
+(8, 'DEMANDE_PRECISIONS'::TypeDecision, NOW(), 'Veuillez fournir un document plus lisible', 5, 3),
+(9, 'ACCEPTATION'::TypeDecision, NOW(), 'Accepté pour DS R3.01', 6, 3),
+(10, 'ACCEPTATION'::TypeDecision, NOW(), 'Accepté pour Contrôle R3.07', 7, 3)
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Repositionnement final des séquences après injection de données
+ALTER SEQUENCE utilisateur_id_seq RESTART WITH 9;
+ALTER SEQUENCE programme_id_seq RESTART WITH 2;
+ALTER SEQUENCE matiere_id_seq RESTART WITH 4;
+ALTER SEQUENCE enseignement_id_seq RESTART WITH 100;
+ALTER SEQUENCE seance_id_seq RESTART WITH 10;
+ALTER SEQUENCE absence_id_seq RESTART WITH 10;
+ALTER SEQUENCE justificatif_id_seq RESTART WITH 8;
+ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 11);
+
+-- ⚠️ À vérifier : la parenthèse fermante à la toute fin peut provoquer une erreur de syntaxe.
+-- Si ce script est exécuté tel quel, il faudra probablement retirer le “)” final.
+  id         SERIAL PRIMARY KEY,
+  code       TEXT NOT NULL UNIQUE, -- code unique de l’enseignement
+  libelle    TEXT NOT NULL,
+  id_matiere INT REFERENCES Matiere(id) ON DELETE SET NULL -- matière associée
+);
+
+-- Table des séances (instances datées d’enseignements)
+CREATE TABLE Seance (
+  id              SERIAL PRIMARY KEY,
+  id_vt           TEXT,                    -- identifiant VT (emploi du temps externe)
+  date            DATE NOT NULL,           -- date de la séance
+  heure           TIME NOT NULL,           -- heure de début
+  duree           INTERVAL NOT NULL,       -- durée (ex: '2 hours')
+  type            TEXT NOT NULL,           -- type : CM/TD/TP/DS…
+  id_programme    INT REFERENCES Programme(id) ON DELETE SET NULL,
+  id_enseignement INT REFERENCES Enseignement(id) ON DELETE SET NULL,
+  groupes         TEXT,                    -- description des groupes (G1, G2…)
+  salles          TEXT,                    -- salles utilisées
+  profs           TEXT,                    -- noms / infos profs (non normalisé ici)
+  controle        BOOLEAN NOT NULL DEFAULT FALSE, -- vrai si c'est un contrôle / DS
+  UNIQUE (date, heure, duree, id_enseignement, id_programme) -- évite les doublons
+);
+
+-- Table des absences : lien entre un étudiant et une séance
+CREATE TABLE Absence (
+  id             SERIAL PRIMARY KEY,
+  id_utilisateur INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE, -- étudiant
+  id_seance      INT NOT NULL REFERENCES Seance(id) ON DELETE CASCADE,      -- séance
+  presence       PresenceEtat NOT NULL DEFAULT 'ABSENT',  -- présent/absent
+  justification  JustifEtat   NOT NULL DEFAULT 'INCONNU', -- justifiée ou non
+  motif          TEXT,                                    -- motif textuel
+  commentaire    TEXT,                                    -- commentaire interne
+  UNIQUE (id_utilisateur, id_seance)                     -- max 1 ligne par séance et étudiant
+);
+
+-- Table des justificatifs (fichiers déposés par les utilisateurs)
+CREATE TABLE Justificatif (
+  id                   SERIAL PRIMARY KEY,
+  fichier              BYTEA,                 -- contenu binaire du fichier
+  commentaire          TEXT,                  -- commentaire du déposant ou interne
+  date_soumission      TIMESTAMP NOT NULL DEFAULT NOW(),
+  date_maj             TIMESTAMP NOT NULL DEFAULT NOW(), -- MAJ du justificatif
+  motif_libre          TEXT,                  -- motif libre saisi par l’étudiant
+  id_utilisateur       INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE,
+  nom_fichier_original TEXT,                  -- nom d’origine du fichier
+  type_mime            TEXT,                  -- type MIME (pdf, png, etc.)
+  verouille            BOOLEAN NOT NULL DEFAULT FALSE, -- verrouillage du justificatif
+  verouille_date       TIMESTAMP,             -- date de verrouillage
+  date_debut_demande   DATE,                  -- période d'absence couverte (début)
+  date_fin_demande     DATE                   -- période d'absence couverte (fin)
+);
+
+-- Table de liaison N-N entre justificatif(s) et absence(s)
+CREATE TABLE JustificatifAbsence (
+  id_justificatif INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  id_absence      INT NOT NULL REFERENCES Absence(id) ON DELETE CASCADE,
+  PRIMARY KEY (id_justificatif, id_absence)
+);
+
+-- Historique des décisions prises sur chaque justificatif
+CREATE TABLE HistoriqueDecision (
+  id              SERIAL PRIMARY KEY,
+  action          TypeDecision NOT NULL,         -- type de décision/action
+  date_action     TIMESTAMP NOT NULL DEFAULT NOW(),
+  motif_decision  TEXT,                         -- justification textuelle
+  id_justificatif INT NOT NULL REFERENCES Justificatif(id) ON DELETE CASCADE,
+  id_auteur       INT NOT NULL REFERENCES Utilisateur(id) ON DELETE CASCADE -- auteur décision
+);
+
+-- Table de liaison Enseignant-Ressource (009-1)
+-- Associe un enseignant (Utilisateur) à une ressource (Enseignement par son code)
+CREATE TABLE enseignantressource (
+    id_enseignant INT NOT NULL REFERENCES utilisateur(id) ON DELETE CASCADE,
+    code_ressource VARCHAR(50) NOT NULL REFERENCES enseignement(code) ON DELETE CASCADE,
+    PRIMARY KEY (id_enseignant, code_ressource) -- un même couple enseignant/ressource unique
+);
+
+
+-- INDEX pour optimiser les recherches
+CREATE INDEX idx_absence_utilisateur ON Absence(id_utilisateur);   -- recherche absences par étudiant
+CREATE INDEX idx_absence_seance      ON Absence(id_seance);        -- recherche absences par séance
+CREATE INDEX idx_justificatif_user   ON Justificatif(id_utilisateur); -- justificatifs par utilisateur
+CREATE INDEX idx_hist_justif         ON HistoriqueDecision(id_justificatif); -- historique par justificatif
+CREATE INDEX idx_seance_programme    ON Seance(id_programme);      -- filtrer les séances par programme
+CREATE INDEX idx_seance_enseignement ON Seance(id_enseignement);   -- filtrer par enseignement
+CREATE UNIQUE INDEX IF NOT EXISTS uq_seance_vt ON Seance(id_vt);   -- id VT unique si présent
+
+
+-- FORÇAGE DE LA RÉINITIALISATION DE LA SÉQUENCE UTILISATEUR
+ALTER SEQUENCE utilisateur_id_seq RESTART WITH 1;
+
+-- Insertion des utilisateurs fixes (IDs 1 à 5)
+-- (ON CONFLICT permet de rejouer le script sans dupliquer)
+INSERT INTO Utilisateur (id, identifiant, nom, prenom, email, date_naissance, ine, role, mot_de_passe_hash) VALUES
+(1,'abdelwaheb.chakour','Chakour','Abdelwaheb','abdelwaheb.chakour@uphf.fr','2005-02-12','INE-ABDEL-0001','ETUDIANT','$2y$10$g81rl97psHiqT0VvLvn1ee0ICcXPveK5Tjc0f7IkjSITc.SBUhVd.'),
+(2,'marie.dupont.etu','Dupont','Marie','marie.dupont@uphf.fr','2004-09-21','INE-MARIE-0002','ETUDIANT','$2y$10$g81rl97psHiqT0VvLvn1ee0ICcXPveK5Tjc0f7IkjSITc.SBUhVd.'),
+(3,'julien.vion','Vion','Julien','julien.vion@uphf.fr','1985-06-03',NULL,'RESPONSABLE','$2y$10$iIlSV.Xz2maTSp20c/B4GeogQtcyyaMbWBY1a4Z/76ZOq2AI23Suu'),
+(4, 'prof.test', 'Test', 'Prof', 'prof.test@uphf.fr', NULL, NULL, 'ENSEIGNANT', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS'),
+(5, 'secr.test', 'Test', 'Secr', 'secr.test@uphf.fr', NULL, NULL, 'SECRETAIRE', '$2y$10$XPJtIr.jawtY2J67WcBROOuUZ2.tJW/LpPUSKkABPbAqrEKbxIuTO')
+ON CONFLICT (id) DO UPDATE SET identifiant=EXCLUDED.identifiant, email=EXCLUDED.email, role=EXCLUDED.role, mot_de_passe_hash=EXCLUDED.mot_de_passe_hash;
+
+-- La prochaine insertion automatique commencera à 6
+ALTER SEQUENCE utilisateur_id_seq RESTART WITH 6; -- Prochain ID pour les insertions non fixées
+
+-- Insertion des professeurs réels (utilisateurs > 5)
+INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES
+('marie.dupont', 'Dupont', 'Marie', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'marie.dupont@iut.fr', 'ENSEIGNANT')
+ON CONFLICT (identifiant) DO UPDATE SET role=EXCLUDED.role;
+
+INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES
+('jean.valjean', 'Valjean', 'Jean', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'jean.valjean@iut.fr', 'ENSEIGNANT')
+ON CONFLICT (identifiant) DO UPDATE SET role=EXCLUDED.role;
+
+INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES
+('sophie.martin', 'Martin', 'Sophie', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'sophie.martin@iut.fr', 'ENSEIGNANT')
+ON CONFLICT (identifiant) DO UPDATE SET role=EXCLUDED.role;
+
+
+-- Programme, Matières
+ALTER SEQUENCE programme_id_seq RESTART WITH 2;
+INSERT INTO Programme (id, libelle, composante, public) VALUES (1,'BUT INFORMATIQUE','IUT','FI') ON CONFLICT (id) DO NOTHING;
+
+ALTER SEQUENCE matiere_id_seq RESTART WITH 4;
+INSERT INTO Matiere (id, code, libelle) VALUES
+(1,'MAT101','Analyse 1'),
+(2,'INFO201','Programmation 2'),
+(3,'PHY301','Physique générale')
+ON CONFLICT (id) DO UPDATE SET code=EXCLUDED.code, libelle=EXCLUDED.libelle;
+
+ALTER SEQUENCE enseignement_id_seq RESTART WITH 4;
+INSERT INTO Enseignement (id, code, libelle, id_matiere) VALUES
+(1,'ENS-MAT101-TD1','Analyse 1 — TD',1),
+(2,'ENS-INFO201-TP','Programmation 2 — TP',2),
+(3,'ENS-PHY301-CM','Physique générale — CM',3)
+ON CONFLICT (id) DO UPDATE SET code=EXCLUDED.code, libelle=EXCLUDED.libelle, id_matiere=EXCLUDED.id_matiere;
+
+-- Insertion d’un gros catalogue d’enseignements BUT (009-2)
+-- NB : ON CONFLICT (code) DO NOTHING pour pouvoir rejouer le script
+INSERT INTO Enseignement (code, libelle, id_matiere) VALUES
+('P1.01', 'Projet Professionnel S1', 1), ('R1.01', 'Initiation au Développement', 1),
+('R1.02', 'Développement Web', 1), ('R1.03', 'Architecture des Ordinateurs', 1),
+('R1.04', 'Bases de Données', 1), ('R1.05', 'Mathématiques Info', 1),
+('R1.06', 'Économie et Gestion', 1), ('R1.07', 'Anglais S1', 1),
+('R1.08', 'Communication S1', 1), ('R1.09', 'Projet Pro S1', 1),
+('R1.10', 'Outils Math S1', 1), ('R1.11', 'Algo/Prog S1', 1),
+('R1.12', 'Systèmes d''Exploitation S1', 1), ('S1.01', 'SAÉ S1.01', 1),
+('S1.02', 'SAÉ S1.02', 1), ('S1.03', 'SAÉ S1.03', 1), ('S1.04', 'SAÉ S1.04', 1),
+('S1.05', 'SAÉ S1.05', 1), ('S1.06', 'SAÉ S1.06', 1),
+('P2.01', 'Projet Professionnel S2', 1), ('R2.01', 'Algorithmique Avancée', 1),
+('R2.02', 'Développement d''Applications', 1), ('R2.03', 'Réseaux', 1),
+('R2.04', 'SQL Avancé', 1), ('R2.05', 'Programmation Système', 1),
+('R2.06', 'Exploitation BD', 1), ('R2.07', 'Gestion de Projet I', 1),
+('R2.08', 'Introduction au Droit', 1), ('R2.09', 'Anglais S2', 1),
+('R2.10', 'Communication S2', 1), ('R2.11', 'Outils Math S2', 1),
+('R2.12', 'Statistiques', 1), ('R2.13', 'Communication Technique', 1),
+('R2.14', 'Initiation à l''IA', 1), ('S2.01', 'SAÉ S2.01', 1),
+('S2.02', 'SAÉ S2.02', 1), ('S2.03', 'SAÉ S2.03', 1), ('S2.04', 'SAÉ S2.04', 1),
+('S2.05', 'SAÉ S2.05', 1), ('S2.06', 'SAÉ S2.06', 1),
+('P3.01', 'Projet Professionnel S3', 1), ('R3.01', 'Développement Back-end', 1),
+('R3.02', 'Analyse et Conception', 1), ('R3.03', 'Algorithmique Avancée II', 1),
+('R3.04.1', 'POO Avancée', 1), ('R3.04.2', 'Programmation Fonctionnelle', 1),
+('R3.05', 'BD Relationnelles', 1), ('R3.06', 'Réseaux Avancés', 1),
+('R3.07', 'Gestion de Projet', 1), ('R3.08', 'Anglais S3', 1),
+('R3.09', 'Communication S3', 1), ('R3.10', 'Mathématiques Appliquées', 1),
+('R3.11', 'Compléments d''Algo', 1), ('R3.12', 'Introduction à l''UX/UI', 1),
+('R3.13', 'SGBD', 1), ('R3.14', 'Technologies Web Avancées', 1),
+('S3.A.01-B.01', 'SAÉ S3 Parcours A/B', 1), ('S3.A.01-B.01.GP', 'SAÉ S3 GP', 1),
+('P4.01', 'Projet Professionnel S4', 1), ('R4.01', 'Architecture Logicielle', 1),
+('R4.02', 'Programmation Distribuée', 1), ('R4.03', 'Qualité de Développement', 1),
+('R4.04', 'Sécurité des Systèmes', 1), ('R4.05', 'Optimisation', 1),
+('R4.06', 'Droit du Numérique', 1), ('R4.07', 'Anglais S4', 1),
+('R4.13', 'Communication Pro S4', 1), ('R4.A.08-B.08', 'Approfondissement BDD', 1),
+('R4.A.09-B.09', 'Approfondissement Systèmes', 1), ('R4.A.10', 'Développement Mobile A', 1),
+('R4.A.11', 'Gestion de Configuration A', 1), ('R4.A.12', 'Front-End Avancé A', 1),
+('R4.B.10', 'Développement Mobile B', 1), ('R4.B.11', 'Gestion de Configuration B', 1),
+('R4.B.12', 'Front-End Avancé B', 1), ('S4.A.01', 'SAÉ S4 Parcours A', 1),
+('S4.A.01-B.01', 'SAÉ S4 Parcours A/B', 1), ('S4.B.01', 'SAÉ S4 Parcours B', 1),
+('P5.A.01-B.01', 'Projet Professionnel S5', 1), ('R5.01', 'Méthodes Agiles', 1),
+('R5.03', 'Développement Sécurisé', 1), ('R5.A.02-B.02', 'Administration BDD', 1),
+('R5.A.04', 'Programmation Web Avancée', 1), ('R5.A.05', 'Cloud Computing', 1),
+('R5.A.06', 'Sécurité Avancée', 1), ('R5.A.07-B.05', 'Business Intelligence', 1),
+('R5.A.08', 'Recherche Opérationnelle', 1), ('R5.A.09-B.07', 'Développement Cross-Platform', 1),
+('R5.A.10', 'Gestion de Projet II', 1), ('R5.A.11', 'Anglais Pro', 1),
+('R5.A.12', 'Communication Pro II', 1), ('R5.A.13-B.11', 'Innovation', 1),
+('R5.A.14-B.12', 'Intelligence Artificielle', 1), ('R5.A.15', 'Méthodes de Test', 1),
+('R5.A.16', 'Gestion des Conflits', 1), ('R5.B.04', 'Analyse de Données', 1),
+('R5.B.06', 'SIG', 1), ('R5.B.08', 'Big Data', 1),
+('R5.B.09', 'Sécurité des Réseaux', 1), ('R5.B.10', 'Développement Backend Avancé', 1),
+('R5.B.13', 'Développement d''API', 1), ('R5.B.14', 'Maintenance Logicielle', 1),
+('R5.MP', 'Stage MP', 1), ('S5.A.01', 'SAÉ S5 Parcours A', 1),
+('S5.A.02', 'SAÉ S5 Parcours A (Option)', 1), ('S5.B.01', 'SAÉ S5 Parcours B', 1),
+('P6.A.01-B.01', 'Projet Professionnel S6', 1), ('R6.01', 'Projet Fin d''Études', 1),
+('R6.02', 'Droit Numérique PI', 1), ('R6.03', 'Management d''Équipe', 1),
+('R6.07', 'Communication Internationale', 1), ('R6.A.04-B.04', 'Sécurité des Applications Web', 1),
+('R6.A.05', 'Développement Avancé', 1), ('R6.A.06', 'DevOps', 1),
+('R6.B.05', 'Data Mining', 1), ('R6.B.06', 'Visualisation de Données', 1),
+('S6.A.01', 'SAÉ S6 Parcours A', 1), ('S6.A.01-B.01', 'SAÉ S6 Parcours A/B', 1),
+('S6.B.01', 'SAÉ S6 Parcours B', 1)
+ON CONFLICT (code) DO NOTHING;
+
+
+-- Attributions des ressources aux enseignants (009-3)
+-- Chaque ligne : un enseignant + un code de ressource enseignée
+INSERT INTO enseignantressource (id_enseignant, code_ressource) VALUES
+((SELECT id FROM utilisateur WHERE identifiant = 'prof.test'), 'R1.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'prof.test'), 'R3.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'prof.test'), 'R4.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'R2.02'),
+((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'R4.02'),
+((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'P5.A.01-B.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'jean.valjean'), 'R3.07'),
+((SELECT id FROM utilisateur WHERE identifiant = 'jean.valjean'), 'R5.01'),
+((SELECT id FROM utilisateur WHERE identifiant = 'sophie.martin'), 'R1.02'),
+((SELECT id FROM utilisateur WHERE identifiant = 'sophie.martin'), 'S6.A.01')
+ON CONFLICT (id_enseignant, code_ressource) DO NOTHING;
+
+
+-- Séances de base (jeu de données minimal)
+ALTER SEQUENCE seance_id_seq RESTART WITH 1;
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(1,'2025-10-02','09:00','2 hours','TP',1,2,'G1','B201','Dupont',FALSE),
+(2,'2025-10-03','10:00','1 hour','TD',1,1,'G1','A105','Martin',TRUE),
+(3,'2025-10-05','08:30','1 hour 30 minutes','CM',1,3,'ALL','Amphi','Durand',FALSE),
+(4,'2025-10-06','14:00','1 hour','TD',1,2,'G2','C304','Dupont',FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+-- Scénarios de Test (séances supplémentaires pour tests fonctionnels)
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(5, '2025-11-20', '11:00', '1 hour', 'TD', 1, 1, 'G2', 'B202', 'Martin', FALSE)
+ON CONFLICT (id) DO UPDATE SET date = EXCLUDED.date, heure = EXCLUDED.heure;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(6, CURRENT_DATE, '09:00', '2 hours', 'DS', 1, 2, 'G1', 'A300', 'Dupont', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(7, CURRENT_DATE, '14:00', '1 hour', 'TP', 1, 2, 'G2', 'B203', 'Martin', FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(8, CURRENT_DATE, '10:00', '2 hours', 'DS', 1, (SELECT id FROM Enseignement WHERE code = 'R3.01'), 'G1', 'B101', 'Test Prof', FALSE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+(9, CURRENT_DATE, '14:00', '1 hour', 'TD', 1, (SELECT id FROM Enseignement WHERE code = 'R3.07'), 'G2', 'C202', 'Valjean Jean', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+-- Absences de test pour l’utilisateur 1
+ALTER SEQUENCE absence_id_seq RESTART WITH 1;
+INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+(1,1,1,'ABSENT'::PresenceEtat,'INCONNU'::JustifEtat,'Programmation 2','Certificat médical attendu'),
+(2,1,2,'ABSENT'::PresenceEtat,'NON_JUSTIFIEE'::JustifEtat,'Analyse 1','Document illisible'),
+(3,1,3,'ABSENT'::PresenceEtat,'JUSTIFIEE'::JustifEtat,'Physique','Justificatif familial'),
+(4,1,4,'ABSENT'::PresenceEtat,'INCONNU'::JustifEtat,'Programmation 2','Bus non présent'),
+(5, 1, 5, 'ABSENT'::PresenceEtat, 'INCONNU'::JustifEtat, 'Rappel 48h en attente', 'Test US7'),
+(6, 1, 6, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Acceptation Rattrapage', 'Test US8'),
+(7, 1, 7, 'ABSENT'::PresenceEtat, 'INCONNU'::JustifEtat, 'En révision', 'Test US4 Re-upload'),
+(8, 1, 8, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Test DS', 'Test Rattrapage DS'),
+(9, 1, 9, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Test Contrôle', 'Test Prof Filter')
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Justificatifs (exemple de données binaires simplifiées)
+-- Utilisation de decode('HEX', 'hex') pour convertir une chaîne hex en BYTEA
+ALTER SEQUENCE justificatif_id_seq RESTART WITH 1;
+INSERT INTO Justificatif (id, fichier, commentaire, date_soumission, date_maj, motif_libre, id_utilisateur, nom_fichier_original, type_mime) VALUES
+(1, decode('255044', 'hex'), 'Certificat médical', NOW(), NOW(), NULL, 1, 'certificat_medical.pdf', 'application/pdf'),
+(2, decode('89504E47', 'hex'), 'Photo floue', NOW(), NOW(), NULL, 1, 'photo_justif.png', 'image/png'),
+(3, decode('504B03', 'hex'), 'Justificatif compressé', NOW(), NOW(), NULL, 1, 'justif.zip', 'application/zip'),
+(4, decode('255044', 'hex'), 'Justif DS accepté', NOW(), NOW(), 'Maladie', 1, 'justif_ds.pdf', 'application/pdf'),
+(5, decode('255044', 'hex'), 'Justif de base', NOW(), NOW(), 'Autre', 1, 'justif_base.pdf', 'application/pdf'),
+(6, decode('255044', 'hex'), 'Justif DS auto-soumis', NOW(), NOW(), 'Maladie', 1, 'test_rattrapage_ds.pdf', 'application/pdf'),
+(7, decode('255044', 'hex'), 'Justif Contrôle auto-soumis', NOW(), NOW(), 'Autre', 1, 'test_rattrapage_controle.pdf', 'application/pdf')
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Liens Justificatif-Absence (N-N)
+INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES
+(1,1), (2,2), (3,3), (4,6), (5,7), (6,8), (7,9)
+ON CONFLICT DO NOTHING;
+
+
+-- Historique de Décision sur les justificatifs
+ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 1;
+INSERT INTO HistoriqueDecision (id, action, date_action, motif_decision, id_justificatif, id_auteur) VALUES
+(1,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',1,1),
+(2,'ACCEPTATION'::TypeDecision,NOW(),'Certificat accepté',1,3),
+(3,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',2,1),
+(4,'DEMANDE_PRECISIONS'::TypeDecision,NOW(),'Document illisible',2,3),
+(5,'SOUMISSION'::TypeDecision,NOW(),'Soumission initiale',3,1),
+(6,'REJET'::TypeDecision,NOW(),'Format non accepté',3,3),
+(7, 'ACCEPTATION'::TypeDecision, NOW(), 'Justificatif validé par RP', 4, 3),
+(8, 'DEMANDE_PRECISIONS'::TypeDecision, NOW(), 'Veuillez fournir un document plus lisible', 5, 3),
+(9, 'ACCEPTATION'::TypeDecision, NOW(), 'Accepté pour DS R3.01', 6, 3),
+(10, 'ACCEPTATION'::TypeDecision, NOW(), 'Accepté pour Contrôle R3.07', 7, 3)
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Repositionnement final des séquences après injection de données
+ALTER SEQUENCE utilisateur_id_seq RESTART WITH 9;
+ALTER SEQUENCE programme_id_seq RESTART WITH 2;
+ALTER SEQUENCE matiere_id_seq RESTART WITH 4;
+ALTER SEQUENCE enseignement_id_seq RESTART WITH 100;
+ALTER SEQUENCE seance_id_seq RESTART WITH 10;
+ALTER SEQUENCE absence_id_seq RESTART WITH 10;
+ALTER SEQUENCE justificatif_id_seq RESTART WITH 8;
+ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 11);
+
+-- ⚠️ À vérifier : la parenthèse fermante à la toute fin peut provoquer une erreur de syntaxe.
+-- Si ce script est exécuté tel quel, il faudra probablement retirer le “)” final.
