@@ -8,10 +8,7 @@ class HistoriquePresenter {
     private HistoriqueModel $modele;
 
     public function __construct() {
-
-
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
 
         $this->modele = new HistoriqueModel($this->pdo);

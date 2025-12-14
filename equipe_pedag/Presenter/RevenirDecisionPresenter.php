@@ -8,8 +8,7 @@ class RevenirDecisionPresenter {
     private ActionModel $actionModel;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
         $this->actionModel = new ActionModel($this->pdo);
     }
@@ -24,18 +23,14 @@ class RevenirDecisionPresenter {
             exit;
         }
 
-        // vérif csrf
-        $csrf = $_POST['csrf'] ?? '';
-        if (!hash_equals($_SESSION['csrf'] ?? '', $csrf)) {
-            exit("erreur csrf");
-        }
+
 
 
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $nouvelleAction = $_POST['action'] ?? '';
         $motif = trim($_POST['motif'] ?? '');
         $idAuteur = 3; // responsable connecté
-        $redirect = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'historique.php');
+        $redirect = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
 
         // actions autorisées
         $possibles = [

@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../Model/JustificatifInfos.php';
+require_once __DIR__ . '/../Model/JustificatifInfosModel.php';
 
 class IndexPresenter {
 
@@ -19,8 +19,7 @@ class IndexPresenter {
 
         // session_start() a été déplacé dans index.php
 
-        // crs
-        $token = $_SESSION['csrf'] ?? null;
+
 
         // recup toutes les absences + dernier justificatif + dernière décision
         $rowsAll = $this->model->AbsencesDetails();
@@ -63,7 +62,7 @@ class IndexPresenter {
         // CORRECTION DE LA LIGNE 63 : Changement de 'IndexView.php' à 'index.php'
         require __DIR__ . '/../View/index.php';
         $view = new IndexView();
-        $view->render($justificatifsFiltres, $compteurs, $ongletActif, $selected, $token);
+        $view->render($justificatifsFiltres, $compteurs, $ongletActif, $selected);
     }
 
     private function action_en_statut(?string $action): string {

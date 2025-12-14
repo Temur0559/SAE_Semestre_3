@@ -8,8 +8,7 @@ class PrecisionsPresenter {
     private ActionModel $actionModel;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
         $this->actionModel = new ActionModel($this->pdo);
     }
@@ -24,11 +23,6 @@ class PrecisionsPresenter {
             exit;
         }
 
-        // verification csrf
-        $csrf = $_POST['csrf'] ?? '';
-        if (!hash_equals($_SESSION['csrf'] ?? '', $csrf)) {
-            exit("erreur");
-        }
 
         // données envoyées par le formulaire
         $idJustificatif = (int)($_POST['id'] ?? 0);

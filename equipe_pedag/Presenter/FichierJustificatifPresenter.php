@@ -10,8 +10,7 @@ class FichierJustificatifPresenter {
     private FichierJustificatifModel $model;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
         $this->model = new FichierJustificatifModel($this->pdo);
     }

@@ -8,8 +8,7 @@ class RejetPresenter {
     private ActionModel $actionModel;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
         $this->actionModel = new ActionModel($this->pdo);
     }
@@ -22,12 +21,6 @@ class RejetPresenter {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php');
             exit;
-        }
-
-        // verification csrf
-        $csrf = $_POST['csrf'] ?? '';
-        if (!hash_equals($_SESSION['csrf'] ?? '', $csrf)) {
-            exit("Requête invalide (CSRF).");
         }
 
 

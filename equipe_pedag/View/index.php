@@ -2,7 +2,7 @@
 
 class IndexView {
 
-    public function render(array $justificatifs, array $compteurs, string $ongletActif, ?array $selected, ?string $token) {
+    public function render(array $justificatifs, array $compteurs, string $ongletActif, ?array $selected) {
 
         
         function fr_date($dt){ return $dt ? date('d/m/Y', strtotime($dt)) : ''; }
@@ -44,7 +44,7 @@ class IndexView {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>Gestion des absences — Tableau de bord</title>
-<link rel="stylesheet" href="ress/css/style.css?v=<?=time()?>">
+<link rel="stylesheet" href="./Style.css">
 
 <style>
 .empty-pane{
@@ -188,7 +188,6 @@ class IndexView {
 
          
           <form method="post" action="index.php?page=traiter_action" class="stack">
-            <input type="hidden" name="csrf" value="<?=$token?>">
             <input type="hidden" name="id" value="<?=$selected['id']?>">
             <input type="text" name="motifDecision" placeholder="Motif (optionnel)" class="inp">
             <button class="btn primary" name="action" value="ACCEPTATION">Accepter</button>
@@ -196,7 +195,6 @@ class IndexView {
 
          
           <form method="post" action="index.php?page=rejet" class="stack">
-            <input type="hidden" name="csrf" value="<?=$token?>">
             <input type="hidden" name="id" value="<?=$selected['id']?>">
             <input type="text" name="motifDecision" placeholder="Motif du rejet" class="inp">
             <button class="btn danger">Rejeter</button>
@@ -204,7 +202,6 @@ class IndexView {
 
           
           <form method="post" action="index.php?page=precisions" class="stack">
-            <input type="hidden" name="csrf" value="<?=$token?>">
             <input type="hidden" name="id" value="<?=$selected['id']?>">
             <input type="text" name="message" placeholder="Demander des précisions…" class="inp">
             <button class="btn neutral">Demander des précisions</button>

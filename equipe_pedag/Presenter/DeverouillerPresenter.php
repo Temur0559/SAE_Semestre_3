@@ -9,8 +9,7 @@ class DeverouillerPresenter {
     private ActionModel $actionModel;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
         $this->actionModel = new ActionModel($this->pdo);
     }
@@ -23,13 +22,6 @@ class DeverouillerPresenter {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php');
             exit;
-        }
-
-        // verif du csrf
-        $csrf = $_POST['csrf'] ?? '';
-        if (!hash_equals($_SESSION['csrf'] ?? '', $csrf)) {
-            http_response_code(400);
-            exit("erreur de requête");
         }
 
         // verif de l'id du justificatif

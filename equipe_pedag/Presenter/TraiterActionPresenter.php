@@ -8,8 +8,7 @@ class TraiterActionPresenter {
     private ActionModel $actionModel;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
         $this->actionModel = new ActionModel($this->pdo);
     }
@@ -23,18 +22,13 @@ class TraiterActionPresenter {
             exit;
         }
 
-        // vérification csrf
-        $csrf = $_POST['csrf'] ?? '';
-        if (!hash_equals($_SESSION['csrf'] ?? '', $csrf)) {
-            exit("Requête invalide (CSRF)");
-        }
 
         // données envoyées
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $actionDemandee = $_POST['action'] ?? '';
         $motif          = trim($_POST['motifDecision'] ?? ''); // Correction pour utiliser 'motifDecision' comme dans index.php
         $idAuteur       = 3; // responsable connecté
-        $redirect       = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'historique.php');
+        $redirect       = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
 
         // liste des actions autorisées
         $actionsAutorisees = [

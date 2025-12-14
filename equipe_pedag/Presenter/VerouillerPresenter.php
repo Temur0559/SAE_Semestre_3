@@ -23,11 +23,7 @@ class VerouillerPresenter { // CORRIGÉ
             exit;
         }
 
-        // vérification CSRF
-        $csrf = $_POST['csrf'] ?? '';
-        if (!hash_equals($_SESSION['csrf'] ?? '', $csrf)) {
-            exit("erreur");
-        }
+
 
         // id du justificatif
         $idJustificatif = (int)($_POST['id'] ?? 0);
