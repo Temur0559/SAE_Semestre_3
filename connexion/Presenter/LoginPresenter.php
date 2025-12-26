@@ -1,10 +1,9 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../Model/UserModel.php';
-
+require_once __DIR__ . '/../config/session.php';
 final class LoginPresenter {
     public function handleLogin(string $email, string $password) {
-        session_start();
 
 
         if (!isset($_POST['csrf'], $_SESSION['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {

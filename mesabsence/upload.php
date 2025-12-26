@@ -1,38 +1,68 @@
 <?php
 declare(strict_types=1);
-session_start();
+
+require_once __DIR__ . '/../connexion/config/session.php'; // ✅ Session centralisée
 require_once __DIR__ . '/../connexion/Presenter/require_role.php';
-require_role('ETUDIANT');
 require_once __DIR__ . '/Model/AbsenceModel.php';
+require_once __DIR__ . '/UploadValidator.php'; // ✅ Nouveau validateur
 
-$userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
-if ($userId <= 0) { header('Location: /connexion/View/login.php'); exit; }
+require_role('ETUDIANT');
 
-$absenceId = isset($_POST['absence_id']) ? (int)$_POST['absence_id'] : 0;
-$file      = isset($_FILES['justificatif']) ? $_FILES['justificatif'] : null;
-
-if ($absenceId <= 0 || !$file || $file['error'] !== UPLOAD_ERR_OK) {
-    header('Location: ./index.php'); exit;
-}
-
-
-$maxSize = 10 * 1024 * 1024;
-if ($file['size'] > $maxSize) { header('Location: ./index.php'); exit; }
-
-$original = (string)$file['name'];
-$mime     = (string)($file['type'] ?: 'application/octet-stream');
-$blob     = file_get_contents($file['tmp_name']);
-
-try {
-    AbsenceModel::insertJustificatif($absenceId, $userId, $original, $mime, $blob);
-} catch (Throwable $e) {
-
-    http_response_code(500);
-    echo "<pre>Upload error: " . $e->getMessage() . "</pre>";
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: index.php');
     exit;
 }
 
+$userId = $_SESSION['user']['id'] ?? 0;
+$absenceId = (int)($_POST['absence_id'] ?? 0);
 
-$qs = isset($_GET['filtre']) ? '?filtre=' . urlencode($_GET['filtre']) : '';
-header('Location: ./index.php' . $qs);
+if ($absenceId <= 0 || !isset($_FILES['fichier'])) {
+    header('Location: index.php?err=missing');
+    exit;
+}
+
+// ✅ VALIDATION DU FICHIER UPLOADÉ
+$errors = UploadValidator::validate($_FILES['fichier']);
+if (!empty($errors)) {
+    $errorMsg = implode(' ', $errors);
+    header('Location: index.php?err=' . urlencode($errorMsg));
+    exit;
+}
+
+// Récupération des informations du fichier
+$originalName = $_FILES['fichier']['name'];
+$tmpPath = $_FILES['fichier']['tmp_name'];
+$mimeType = mime_content_type($tmpPath);
+$binaryContent = file_get_contents($tmpPath);
+
+// Récupération du commentaire et motif libre
+$commentaire = trim($_POST['commentaire'] ?? '');
+$motifLibre = trim($_POST['motif_libre'] ?? '');
+
+if ($binaryContent === false) {
+    header('Location: index.php?err=read');
+    exit;
+}
+
+try {
+    // Insertion du justificatif
+    $justifId = AbsenceModel::insertJustificatif(
+        $absenceId,
+        $userId,
+        $originalName,
+        $mimeType,
+        $binaryContent,
+        $commentaire,
+        $motifLibre
+    );
+
+    if ($justifId > 0) {
+        header('Location: index.php?success=upload');
+    } else {
+        header('Location: index.php?err=db');
+    }
+} catch (\Throwable $e) {
+    error_log("Erreur upload justificatif : " . $e->getMessage());
+    header('Location: index.php?err=exception');
+}
 exit;

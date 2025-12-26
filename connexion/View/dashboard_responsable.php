@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-session_start();
+require_once __DIR__ . '/../config/session.php';
 
 // On remonte d'un dossier pour atteindre config/base_path.php
 require_once __DIR__ . '/../config/base_path.php';

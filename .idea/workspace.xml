@@ -4,34 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Correction de code par rapport a la bdd.">
-      <change afterPath="$PROJECT_DIR$/Statistiques/Model/StatistiquesModel.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Statistiques/View/statistiques_etudiant.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Statistiques/index.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-27-008-ajouter-profs-reels.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-27-009-ressources-et-attribution.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-27-010-rattrapage-test-data.yaml" afterDir="false" />
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Ajout des statistiques et liaison de toutes les pages entre eux.">
+      <change afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/connexion/config/session.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mesabsence/UploadValidator.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Notification/NotificationService.php" beforeDir="false" afterPath="$PROJECT_DIR$/Notification/NotificationService.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base_de_donnee/changelog/changelog-master.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/changelog/changelog-master.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base_de_donnee/liquibase.properties" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/liquibase.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_enseignant.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_enseignant.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_responsable.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_responsable.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connexion/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/View/HistoriqueView.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/View/HistoriqueView.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/View/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/View/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/View/liste.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notifications/index.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/rattrapages/Model/RattrapageModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/rattrapages/Model/RattrapageModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rattrapages/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/rattrapages/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/soum_justif/JustificationModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/soum_justif/JustificationModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/soum_justif/justification.php" beforeDir="false" afterPath="$PROJECT_DIR$/soum_justif/justification.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vt/sae_vt.php" beforeDir="false" afterPath="$PROJECT_DIR$/vt/sae_vt.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/composer.json" beforeDir="false" afterPath="$PROJECT_DIR$/composer.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/composer.lock" beforeDir="false" afterPath="$PROJECT_DIR$/composer.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/config/db.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/config/db.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/upload.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/upload.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,6 +58,12 @@
     <include_path>
       <path value="$PROJECT_DIR$/vendor/composer" />
       <path value="$PROJECT_DIR$/vendor/phpmailer/phpmailer" />
+      <path value="$PROJECT_DIR$/vendor/symfony/polyfill-mbstring" />
+      <path value="$PROJECT_DIR$/vendor/symfony/polyfill-php80" />
+      <path value="$PROJECT_DIR$/vendor/graham-campbell/result-type" />
+      <path value="$PROJECT_DIR$/vendor/vlucas/phpdotenv" />
+      <path value="$PROJECT_DIR$/vendor/symfony/polyfill-ctype" />
+      <path value="$PROJECT_DIR$/vendor/phpoption/phpoption" />
     </include_path>
   </component>
   <component name="ProblemsViewState">
@@ -188,7 +178,7 @@
       <workItem from="1765378947567" duration="1834000" />
       <workItem from="1765406366189" duration="1463000" />
       <workItem from="1765437726439" duration="2848000" />
-      <workItem from="1766748406080" duration="18305000" />
+      <workItem from="1766748406080" duration="21084000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -270,7 +260,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764150796641</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Ajout des statistiques et liaison de toutes les pages entre eux.">
+      <option name="closed" value="true" />
+      <created>1766769686017</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1766769686017</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -284,6 +282,7 @@
     <MESSAGE value="Mise à jour de la bdd pour les test de la us8 et 7" />
     <MESSAGE value="Ajout du hachage et correction de la soumission de justificatif" />
     <MESSAGE value="Correction de code par rapport a la bdd." />
-    <option name="LAST_COMMIT_MESSAGE" value="Correction de code par rapport a la bdd." />
+    <MESSAGE value="Ajout des statistiques et liaison de toutes les pages entre eux." />
+    <option name="LAST_COMMIT_MESSAGE" value="Ajout des statistiques et liaison de toutes les pages entre eux." />
   </component>
 </project>

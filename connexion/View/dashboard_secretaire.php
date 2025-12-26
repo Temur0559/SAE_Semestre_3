@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-session_start();
+require_once __DIR__ . '/../config/session.php';
 
 // CORRECTION DU CHEMIN : dashboard_secretaire.php est dans connexion/View/
 // On doit remonter d'un cran pour atteindre config/

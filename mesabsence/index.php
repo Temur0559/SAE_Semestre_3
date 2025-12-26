@@ -1,23 +1,13 @@
 <?php
 declare(strict_types=1);
-session_start();
 
-
-if (!isset($_SESSION['user'])) {
-    $_SESSION['user'] = [
-        'id' => 1,
-        'identifiant' => 'abdelwaheb.chakour',
-        'role' => 'ETUDIANT'
-    ];
-}
-
-
+require_once __DIR__ . '/../connexion/config/session.php'; // ✅ Au lieu de session_start()
 require_once __DIR__ . '/../connexion/Presenter/require_role.php';
-require_role('ETUDIANT');
-require_once __DIR__ . '/../connexion/config/base_path.php';
-
-
 require_once __DIR__ . '/Model/AbsenceModel.php';
+
+require_role('ETUDIANT');
+
+
 
 
 $userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;

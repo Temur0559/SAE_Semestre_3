@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-session_start();
+require_once __DIR__ . '/../config/session.php';
 if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
 $error = isset($_GET['err']) ? $_GET['err'] : null;
 $ok    = isset($_GET['ok'])  ? $_GET['ok']  : null;

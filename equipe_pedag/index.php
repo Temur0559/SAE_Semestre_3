@@ -1,9 +1,16 @@
 <?php
-session_start();
-ini_set('display_errors','1'); ini_set('display_startup_errors','1'); error_reporting(E_ALL);
+declare(strict_types=1);
 
+require_once __DIR__ . '/../connexion/config/session.php';
 require_once __DIR__ . '/../connexion/config/db.php';
+require_once __DIR__ . '/../connexion/Presenter/require_role.php';
+require_once __DIR__ . '/Presenter/IndexPresenter.php';
+
+require_role('RESPONSABLE');
+
 $pdo = db();
+$presenter = new IndexPresenter($pdo);
+$presenter->handle();
 
 
 $page = $_GET['page'] ?? 'index';

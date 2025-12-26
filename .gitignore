@@ -1,7 +1,25 @@
-/.idea/
-mesabsence/uploads/*
+# Environnement
+.env
+.env.local
+.env.*.local
 
-/vendor/
+# Dépendances
+vendor/
+node_modules/
 
-# NOUVELLE LIGNE : Ignorer le fichier de secrets Liquibase
-base_de_donnee/liquibase.local.properties
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Fichiers temporaires
+temp.php

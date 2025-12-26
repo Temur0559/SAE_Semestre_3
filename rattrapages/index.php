@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-session_start();
+require_once __DIR__ . '/../connexion/config/session.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../connexion/Presenter/require_role.php';
 require_once __DIR__ . '/../connexion/config/base_path.php';
