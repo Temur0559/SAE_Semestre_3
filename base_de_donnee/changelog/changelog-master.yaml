@@ -5,11 +5,26 @@ databaseChangeLog:
       file: changelog/2025-11-10-002-schema.yaml
   - include:
       file: changelog/2025-11-10-003-indexes.yaml
+
+
   - include:
       file: changelog/2025-11-10-004-seed.yaml
   - include:
       file: changelog/2025-11-10-005-reset-sequences.yaml
   - include:
       file: changelog/2025-11-10-006-justificatif-alter.yaml
+
+
   - include:
       file: changelog/2025-11-24-007-scenarios-test.yaml
+
+
+  - include:
+      file: 2025-11-27-008-ajouter-profs-reels.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 2025-11-27-009-ressources-et-attribution.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 2025-11-27-010-rattrapage-test-data.yaml
+      relativeToChangelogFile: true

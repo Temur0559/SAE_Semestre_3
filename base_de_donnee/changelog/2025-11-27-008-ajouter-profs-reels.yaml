@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2025-11-27-008-insert-teachers
+      author: Sarah
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              -- Définition du mot de passe haché (CORRIGÉ: Utilise le même que prof.test)
+              -- Plaintext: 'hash_enseignant'
+              -- Hash: $2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS
+
+              -- --- Professeur 1: Marie Dupont (Enseignant) ---
+              INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES 
+              ('marie.dupont', 'Dupont', 'Marie', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'marie.dupont@iut.fr', 'ENSEIGNANT')
+              ON CONFLICT (identifiant) DO UPDATE SET email=EXCLUDED.email, role=EXCLUDED.role, mot_de_passe_hash=EXCLUDED.mot_de_passe_hash;
+
+              -- --- Professeur 2: Jean Valjean (RESPONSABLE) ---
+              INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES 
+              ('jean.valjean', 'Valjean', 'Jean', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'jean.valjean@iut.fr', 'ENSEIGNANT')
+              ON CONFLICT (identifiant) DO UPDATE SET email=EXCLUDED.email, role='RESPONSABLE', mot_de_passe_hash=EXCLUDED.mot_de_passe_hash;
+              
+              -- --- Professeur 3: Sophie Martin (Enseignant) ---
+              INSERT INTO utilisateur (identifiant, nom, prenom, mot_de_passe_hash, email, role) VALUES 
+              ('sophie.martin', 'Martin', 'Sophie', '$2y$10$chy8PiyeBX2Zd1BhOhPumOHxlK1EsF/.RYvdNSRCssyy80UMfu0FS', 'sophie.martin@iut.fr', 'ENSEIGNANT')
+              ON CONFLICT (identifiant) DO UPDATE SET email=EXCLUDED.email, role=EXCLUDED.role, mot_de_passe_hash=EXCLUDED.mot_de_passe_hash;

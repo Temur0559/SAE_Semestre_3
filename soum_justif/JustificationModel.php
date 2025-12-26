@@ -6,9 +6,6 @@ require_once __DIR__ . '/../connexion/config/db.php';
 
 final class JustificationModel
 {
-    /**
-     * Récupère la liste des absences qui peuvent être justifiées par l'étudiant.
-     */
     public static function getJustifiableAbsences(int $userId): array
     {
         $sql = "

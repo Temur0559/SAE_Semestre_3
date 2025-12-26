@@ -1,0 +1,134 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2025-11-27-009-1-create-enseignant-ressource
+      author: Ayoub
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              -- Création de la table (Utilisation de minuscules pour la compatibilité PostgreSQL par défaut)
+              CREATE TABLE IF NOT EXISTS enseignantressource (
+                  id_enseignant INT NOT NULL,
+                  code_ressource VARCHAR(50) NOT NULL,
+                  PRIMARY KEY (id_enseignant, code_ressource)
+              );
+              
+              -- Ajout des contraintes de clé étrangère
+              ALTER TABLE enseignantressource
+              DROP CONSTRAINT IF EXISTS fk_er_enseignant;
+              ALTER TABLE enseignantressource
+              ADD CONSTRAINT fk_er_enseignant
+              FOREIGN KEY (id_enseignant) REFERENCES utilisateur(id) ON DELETE CASCADE;
+              
+              ALTER TABLE enseignantressource
+              DROP CONSTRAINT IF EXISTS fk_er_ressource;
+              ALTER TABLE enseignantressource
+              ADD CONSTRAINT fk_er_ressource
+              FOREIGN KEY (code_ressource) REFERENCES enseignement(code) ON DELETE CASCADE;
+              
+              COMMENT ON TABLE enseignantressource IS 'Liaison entre un enseignant et les ressources (Enseignement.code) dont il est responsable.';
+
+
+
+  - changeSet:
+      id: 2025-11-27-009-2-insert-all-but-resources
+      author: Ayoub
+      comment: Insère tous les codes de ressources du BUT (S1 à S6) dans la table Enseignement.
+      changes:
+        - sql:
+            INSERT INTO Enseignement (code, libelle, id_matiere) VALUES
+            ('P1.01', 'Projet Professionnel S1', 1), ('R1.01', 'Initiation au Développement', 1),
+            ('R1.02', 'Développement Web', 1), ('R1.03', 'Architecture des Ordinateurs', 1),
+            ('R1.04', 'Bases de Données', 1), ('R1.05', 'Mathématiques Info', 1),
+            ('R1.06', 'Économie et Gestion', 1), ('R1.07', 'Anglais S1', 1),
+            ('R1.08', 'Communication S1', 1), ('R1.09', 'Projet Pro S1', 1),
+            ('R1.10', 'Outils Math S1', 1), ('R1.11', 'Algo/Prog S1', 1),
+            ('R1.12', 'Systèmes d''Exploitation S1', 1), ('S1.01', 'SAÉ S1.01', 1),
+            ('S1.02', 'SAÉ S1.02', 1), ('S1.03', 'SAÉ S1.03', 1), ('S1.04', 'SAÉ S1.04', 1),
+            ('S1.05', 'SAÉ S1.05', 1), ('S1.06', 'SAÉ S1.06', 1),
+            ('P2.01', 'Projet Professionnel S2', 1), ('R2.01', 'Algorithmique Avancée', 1),
+            ('R2.02', 'Développement d''Applications', 1), ('R2.03', 'Réseaux', 1),
+            ('R2.04', 'SQL Avancé', 1), ('R2.05', 'Programmation Système', 1),
+            ('R2.06', 'Exploitation BD', 1), ('R2.07', 'Gestion de Projet I', 1),
+            ('R2.08', 'Introduction au Droit', 1), ('R2.09', 'Anglais S2', 1),
+            ('R2.10', 'Communication S2', 1), ('R2.11', 'Outils Math S2', 1),
+            ('R2.12', 'Statistiques', 1), ('R2.13', 'Communication Technique', 1),
+            ('R2.14', 'Initiation à l''IA', 1), ('S2.01', 'SAÉ S2.01', 1),
+            ('S2.02', 'SAÉ S2.02', 1), ('S2.03', 'SAÉ S2.03', 1), ('S2.04', 'SAÉ S2.04', 1),
+            ('S2.05', 'SAÉ S2.05', 1), ('S2.06', 'SAÉ S2.06', 1),
+            ('P3.01', 'Projet Professionnel S3', 1), ('R3.01', 'Développement Back-end', 1),
+            ('R3.02', 'Analyse et Conception', 1), ('R3.03', 'Algorithmique Avancée II', 1),
+            ('R3.04.1', 'POO Avancée', 1), ('R3.04.2', 'Programmation Fonctionnelle', 1),
+            ('R3.05', 'BD Relationnelles', 1), ('R3.06', 'Réseaux Avancés', 1),
+            ('R3.07', 'Gestion de Projet', 1), ('R3.08', 'Anglais S3', 1),
+            ('R3.09', 'Communication S3', 1), ('R3.10', 'Mathématiques Appliquées', 1),
+            ('R3.11', 'Compléments d''Algo', 1), ('R3.12', 'Introduction à l''UX/UI', 1),
+            ('R3.13', 'SGBD', 1), ('R3.14', 'Technologies Web Avancées', 1),
+            ('S3.A.01-B.01', 'SAÉ S3 Parcours A/B', 1), ('S3.A.01-B.01.GP', 'SAÉ S3 GP', 1),
+            ('P4.01', 'Projet Professionnel S4', 1), ('R4.01', 'Architecture Logicielle', 1),
+            ('R4.02', 'Programmation Distribuée', 1), ('R4.03', 'Qualité de Développement', 1),
+            ('R4.04', 'Sécurité des Systèmes', 1), ('R4.05', 'Optimisation', 1),
+            ('R4.06', 'Droit du Numérique', 1), ('R4.07', 'Anglais S4', 1),
+            ('R4.13', 'Communication Pro S4', 1), ('R4.A.08-B.08', 'Approfondissement BDD', 1),
+            ('R4.A.09-B.09', 'Approfondissement Systèmes', 1), ('R4.A.10', 'Développement Mobile A', 1),
+            ('R4.A.11', 'Gestion de Configuration A', 1), ('R4.A.12', 'Front-End Avancé A', 1),
+            ('R4.B.10', 'Développement Mobile B', 1), ('R4.B.11', 'Gestion de Configuration B', 1),
+            ('R4.B.12', 'Front-End Avancé B', 1), ('S4.A.01', 'SAÉ S4 Parcours A', 1),
+            ('S4.A.01-B.01', 'SAÉ S4 Parcours A/B', 1), ('S4.B.01', 'SAÉ S4 Parcours B', 1),
+            ('P5.A.01-B.01', 'Projet Professionnel S5', 1), ('R5.01', 'Méthodes Agiles', 1),
+            ('R5.03', 'Développement Sécurisé', 1), ('R5.A.02-B.02', 'Administration BDD', 1),
+            ('R5.A.04', 'Programmation Web Avancée', 1), ('R5.A.05', 'Cloud Computing', 1),
+            ('R5.A.06', 'Sécurité Avancée', 1), ('R5.A.07-B.05', 'Business Intelligence', 1),
+            ('R5.A.08', 'Recherche Opérationnelle', 1), ('R5.A.09-B.07', 'Développement Cross-Platform', 1),
+            ('R5.A.10', 'Gestion de Projet II', 1), ('R5.A.11', 'Anglais Pro', 1),
+            ('R5.A.12', 'Communication Pro II', 1), ('R5.A.13-B.11', 'Innovation', 1),
+            ('R5.A.14-B.12', 'Intelligence Artificielle', 1), ('R5.A.15', 'Méthodes de Test', 1),
+            ('R5.A.16', 'Gestion des Conflits', 1), ('R5.B.04', 'Analyse de Données', 1),
+            ('R5.B.06', 'SIG', 1), ('R5.B.08', 'Big Data', 1),
+            ('R5.B.09', 'Sécurité des Réseaux', 1), ('R5.B.10', 'Développement Backend Avancé', 1),
+            ('R5.B.13', 'Développement d''API', 1), ('R5.B.14', 'Maintenance Logicielle', 1),
+            ('R5.MP', 'Stage MP', 1), ('S5.A.01', 'SAÉ S5 Parcours A', 1),
+            ('S5.A.02', 'SAÉ S5 Parcours A (Option)', 1), ('S5.B.01', 'SAÉ S5 Parcours B', 1),
+            ('P6.A.01-B.01', 'Projet Professionnel S6', 1), ('R6.01', 'Projet Fin d''Études', 1),
+            ('R6.02', 'Droit Numérique PI', 1), ('R6.03', 'Management d''Équipe', 1),
+            ('R6.07', 'Communication Internationale', 1), ('R6.A.04-B.04', 'Sécurité des Applications Web', 1),
+            ('R6.A.05', 'Développement Avancé', 1), ('R6.A.06', 'DevOps', 1),
+            ('R6.B.05', 'Data Mining', 1), ('R6.B.06', 'Visualisation de Données', 1),
+            ('S6.A.01', 'SAÉ S6 Parcours A', 1), ('S6.A.01-B.01', 'SAÉ S6 Parcours A/B', 1),
+            ('S6.B.01', 'SAÉ S6 Parcours B', 1)
+            ON CONFLICT (code) DO NOTHING;
+
+
+  - changeSet:
+      id: 2025-11-27-009-3-assign-selective
+      author: Sarah
+      comment: Attribution sélective des ressources BUT aux professeurs.
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              -- Prof de Test (ID 4) : R1.01, R3.01, R4.01
+              INSERT INTO enseignantressource (id_enseignant, code_ressource) VALUES 
+              (4, 'R1.01'), (4, 'R3.01'), (4, 'R4.01')
+              ON CONFLICT (id_enseignant, code_ressource) DO NOTHING;
+
+              -- Marie Dupont : R2.02, R4.02, P5.A.01-B.01
+              INSERT INTO enseignantressource (id_enseignant, code_ressource) VALUES 
+              ((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'R2.02'),
+              ((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'R4.02'),
+              ((SELECT id FROM utilisateur WHERE identifiant = 'marie.dupont'), 'P5.A.01-B.01')
+              ON CONFLICT (id_enseignant, code_ressource) DO NOTHING;
+              
+              -- Jean Valjean : R3.07, R5.01
+              INSERT INTO enseignantressource (id_enseignant, code_ressource) VALUES 
+              ((SELECT id FROM utilisateur WHERE identifiant = 'jean.valjean'), 'R3.07'),
+              ((SELECT id FROM utilisateur WHERE identifiant = 'jean.valjean'), 'R5.01')
+              ON CONFLICT (id_enseignant, code_ressource) DO NOTHING;
+
+              -- Sophie Martin : R1.02, S6.A.01
+              INSERT INTO enseignantressource (id_enseignant, code_ressource) VALUES 
+              ((SELECT id FROM utilisateur WHERE identifiant = 'sophie.martin'), 'R1.02'),
+              ((SELECT id FROM utilisateur WHERE identifiant = 'sophie.martin'), 'S6.A.01')
+              ON CONFLICT (id_enseignant, code_ressource) DO NOTHING;

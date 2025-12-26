@@ -1,30 +1,46 @@
 <?php
-/****************************************************
- * IMPORT VT -> Neon Postgres (optimisé)
- * - Lecture CSV (séparateur auto ; , tab) + normalisation
- * - Alias FR -> clés internes
- * - Parse Date/Heure/Durée (1h30, 90 min, 01:30, 1.5…)
- * - Insertion Utilisateur, Programme, Matiere, Enseignement,
- * Seance, Absence (UPSERT) avec:
- * • Transaction unique + synchronous_commit=OFF
- * • Caches mémoire pour éviter les SELECT répétés
- * • Batch UPSERT Absence
- ****************************************************/
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
+require_once __DIR__ . '/../connexion/config/base_path.php';
+
+$identifiant_nav = isset($_SESSION['identifiant']) ? htmlspecialchars($_SESSION['identifiant'], ENT_QUOTES, 'UTF-8') : 'Secrétariat';
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 date_default_timezone_set('Europe/Paris');
 
-/* --- Anti-timeout pour gros imports --- */
-ini_set('max_execution_time', '600'); // 10 min
-set_time_limit(600);
-ini_set('memory_limit', '512M');
+ini_set('max_execution_time', '1800'); // 30 min max pour un gros import
+set_time_limit(1800);
+ini_set('memory_limit', '1024M'); // Double la mémoire allouée
 
-/* ========= CONFIG NEON ========= */
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../Notification/NotificationService.php';
+
 $_ENV['NEON_URL'] = 'postgresql://neondb_owner:npg_eAnKzSvo48lf@ep-sweet-butterfly-agv0uvto-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require';
 
 $ERREURS_IMPORT = [];
+$ABSENCE_BATCH = [];
+define('ABS_BATCH_SIZE', 5000); // Lot de 5000 pour l'insertion finale des absences
 
-/* ========= UTILS ========= */
+// Stocke les données uniques collectées lors de la Passée 1
+$BULK_DATA = [
+        'utilisateurs' => [],
+        'programmes' => [],
+        'matieres' => [],
+        'enseignements' => [],
+        'seances' => [],
+        'raw_absence_rows' => [], // Toutes les lignes du CSV après parsing/validation de base
+];
+
+// Cache des IDs après la Passée 2
+$CACHE = [
+        'utilisateur' => [], // [identifiant => id]
+        'programme' => [], // [key => id]
+        'matiere' => [], // [code => id]
+        'enseignement' => [], // [code => id]
+        'seance' => [], // [dup_key => id]
+];
+
 function en_utf8($s){
     $s=(string)$s; if(@preg_match('//u',$s)) return $s;
     if(function_exists('iconv')){
@@ -44,7 +60,6 @@ function trim_str($v){ return trim((string)$v); }
 function key_norm($s){ $t=strtolower(trim_str($s)); $t=sans_accents($t); return preg_replace('/[^a-z0-9]+/','',$t); }
 function norm_token($s){ $t=strtolower(trim((string)$s)); $t=sans_accents($t); return str_replace([' ','-','_'],'',$t); }
 
-/* ========= ALIAS EN-TÊTES ========= */
 function canonique($k){
     static $map = [
             'identifiant'=>['identifiant','id','login','etudid','identifiantetu'],
@@ -79,7 +94,6 @@ function canonique($k){
     return $k;
 }
 
-/* ========= LECTURE CSV ========= */
 function detect_separateur($ligne1){
     $cands=['; ',',',"\t"]; $best=';'; $max=0;
     foreach($cands as $s){ $n=substr_count((string)$ligne1,$s); if($n>$max){$max=$n;$best=$s;} }
@@ -88,7 +102,7 @@ function detect_separateur($ligne1){
 function lire_csv($chemin){
     if(!file_exists($chemin)) throw new Exception("Fichier inexistant");
     $raw=file_get_contents($chemin); if($raw===false) throw new Exception("Lecture fichier impossible");
-    $raw=preg_replace("/^\xEF\xBB\xBF/",'',$raw);
+    $raw=preg_replace("/^\xEF\xBB\xBF/",'',$raw, 1);
     $lignes=preg_split("/\r\n|\n|\r/",$raw);
     if(!$lignes || count($lignes)===0) throw new Exception("Fichier vide");
     $sep=detect_separateur($lignes[0]);
@@ -97,6 +111,8 @@ function lire_csv($chemin){
     $entetes_norm=[]; $lignes_norm=[];
     while(($row=fgetcsv($f,0,$sep,'"','\\'))!==false){
         if(count($row)===1 && trim_str($row[0])==='') continue;
+        if(count($row)>=1 && substr(trim_str($row[0]), 0, 1) === '#') continue;
+
         if(empty($entetes_norm)){
             for($i=0;$i<count($row);$i++){
                 $entetes_norm[$i]=canonique(key_norm(en_utf8(isset($row[$i])?$row[$i]:'')));
@@ -107,16 +123,17 @@ function lire_csv($chemin){
 
         $assoc=[];
         for($i=0;$i<count($entetes_norm);$i++){
-            $assoc[$entetes_norm[$i]]=trim_str(en_utf8(isset($row[$i])?$row[$i]:'')); // jamais "??"
+            $assoc[$entetes_norm[$i]]=trim_str(en_utf8(isset($row[$i])?$row[$i]:''));
         }
         $lignes_norm[]=$assoc;
     }
     fclose($f);
-    if(empty($lignes_norm)) throw new Exception("CSV vide après en-têtes");
+    if(empty($lignes_norm)) {
+        return [$entetes_norm, []];
+    }
     return [$entetes_norm,$lignes_norm];
 }
 
-/* ========= CONVERSIONS ========= */
 function parse_date_sql($val){
     $t=trim((string)$val); if($t==='') return null;
     if(preg_match('/^\d{4}-\d{2}-\d{2}$/',$t)) return $t;
@@ -148,7 +165,8 @@ function duree_to_interval($d){
     if (preg_match('/^(\d+)h(\d{1,2})?$/', $t_no_space, $m)) {
         $h=(int)$m[1]; $min=isset($m[2])?(int)$m[2]:0; $p=[];
         if($h>0)  $p[]="$h hour".($h>1?'s':'');
-        if($min>0)$p[]="$min minute".($min>1?'s':'');
+        $min_val = isset($m[2])?(int)$m[2]:0;
+        if($min_val>0)$p[]="$min_val minute".($min_val>1?'s':'');
         return $p ? implode(' ',$p) : '1 hour';
     }
     if (preg_match('/^(\d+)\s*(min|mn|minutes?)$/', $t, $m)) {
@@ -169,7 +187,10 @@ function duree_to_interval($d){
     return $t;
 }
 function map_presence_enum($presence){
-    $p=norm_token($presence); return ($p==='present'||$p==='p')?'PRESENT':'ABSENT';
+    $p=norm_token($presence);
+    if ($p === 'absent' || $p === 'a') return 'ABSENT';
+    if ($p === 'retard' || $p === 'r') return 'RETARD';
+    return 'PRESENT';
 }
 function map_justif_enum($justif){
     $j=norm_token($justif);
@@ -181,8 +202,6 @@ function map_justif_enum($justif){
     return 'INCONNU';
 }
 function bool_from_oui($v){ $x=strtolower(sans_accents(trim((string)$v))); return ($x==='oui'||$x==='o'||$x==='true'||$x==='1'); }
-
-/* ========= NORMALISATION TYPE (affichage stats) ========= */
 function norm_type($raw){
     $t = norm_token($raw);
     if ($t==='') return 'CM';
@@ -194,23 +213,437 @@ function norm_type($raw){
     $raw = trim((string)$raw);
     return $raw!=='' ? strtoupper($raw) : 'CM';
 }
+function run(PDO $db, callable $fn, string $label){
+    try { return $fn(); }
+    catch(Throwable $e){ throw new Exception("$label: ".$e->getMessage(), 0, $e); }
+}
 
-/* ========= RÉSUMÉ POUR UI ========= */
-function resumer_donnees($lignes){
+function connexion_bdd(){
+    if(!in_array('pgsql',PDO::getAvailableDrivers(),true))
+        throw new Exception("Le driver PDO 'pgsql' n'est pas chargé (extension pdo_pgsql).");
+
+    $neonUrl = $_ENV['NEON_URL'] ?? '';
+    $p = parse_url($neonUrl);
+
+    if(!$p || !isset($p['host'])) throw new Exception("NEON_URL invalide.");
+
+    $hostParts = explode('-pooler', $p['host']);
+    $endpointId = $hostParts[0];
+
+    if (empty($endpointId)) {
+        throw new Exception("Impossible d'extraire l'Endpoint ID à partir de l'hôte Neon. Format attendu: <id>-pooler.<region>...");
+    }
+
+    $host = $p['host'];
+    $port = $p['port'] ?? 5432;
+    $dbname = ltrim($p['path']??'','/');
+
+    $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require;connect_timeout=10;options='endpoint={$endpointId}'";
+
+
+    $db = new PDO($dsn,$p['user']??'', $p['pass']??'', [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => true,
+    ]);
+    $db->exec("SET statement_timeout TO '55s'");
+    return $db;
+}
+
+function collect_unique_data(array $lignes) {
+    global $BULK_DATA, $ERREURS_IMPORT;
+
+    $BULK_DATA['raw_absence_rows'] = [];
+
+    foreach ($lignes as $L) {
+        // --- 1. Validation de base ---
+        $date_sql = parse_date_sql($L['date'] ?? ($L['jour'] ?? ''));
+        $duree_sql = duree_to_interval($L['duree'] ?? '');
+        $heure_sql = heure_to_sql($L['heure'] ?? ($L['heuredebut'] ?? ''));
+        if ($date_sql === null || !preg_match('/hour|minute/i', $duree_sql)) {
+            if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Ligne ignorée : Date/durée invalide pour la ligne.";
+            continue;
+        }
+
+        // --- 2. Normalisation des clés ---
+        $ident = trim_str($L['identifiant'] ?? '');
+        $nom = trim_str($L['nom'] ?? '');
+        $prenom = trim_str($L['prenom'] ?? '');
+
+        if($ident===''){
+            if($nom==='' && $prenom==='') continue;
+            $ident = strtolower(preg_replace('/[^a-z0-9]+/','.', sans_accents($nom.'.'.$prenom)));
+            $ident = trim($ident,'.');
+        }
+
+        // --- 3. Collecte des Entités de Référence (Programme, Matiere, Enseignement) ---
+        $public = trim_str($L['public'] ?? '');
+        $comp = trim_str($L['composante'] ?? '');
+        $dipl = trim_str($L['diplomes'] ?? '');
+
+        $lib_prog = trim_str($dipl!==''?$dipl:'BUT INFORMATIQUE');
+        $comp_prog = trim_str($comp!==''?$comp:'IUT');
+        $pub_prog = trim_str($public!==''?$public:'FI');
+        $prog_key = "$lib_prog|$comp_prog|$pub_prog";
+        $BULK_DATA['programmes'][$prog_key] = ['libelle' => $lib_prog, 'composante' => $comp_prog, 'public' => $pub_prog];
+
+        $mat_code = trim_str($L['identifiantmatiere'] ?? 'MAT-UNKNOWN');
+        $mat_lib = trim_str($L['matiere'] ?? 'Matiere inconnue');
+        $BULK_DATA['matieres'][$mat_code] = ['code' => $mat_code, 'libelle' => $mat_lib];
+
+        $ens_code = trim_str($L['idenseignement'] ?? ($L['identifiantdelenseignement'] ?? 'ENS-UNKNOWN'));
+        $ens_lib = trim_str($L['enseignement'] ?? (($L['matiere'] ?? '') ? $L['matiere'] : 'Enseignement inconnu'));
+        $BULK_DATA['enseignements'][$ens_code] = ['code' => $ens_code, 'libelle' => $ens_lib, 'mat_code' => $mat_code];
+
+        // --- 4. Collecte des Utilisateurs (mis à jour trim_str) ---
+        $user_key = $ident;
+        $BULK_DATA['utilisateurs'][$user_key] = [
+                'identifiant' => $ident,
+                'nom' => $nom,
+                'prenom' => $prenom,
+                'prenom2' => trim_str($L['prenom2'] ?? null),
+                'date_naissance' => parse_date_sql($L['datedenaissance'] ?? null),
+                'email' => trim_str($L['email'] ?? ($ident.'@vt.local')),
+                'ine' => trim_str($L['ine'] ?? null),
+                'role' => 'ETUDIANT',
+        ];
+
+
+        // --- 5. Collecte des Séances ---
+        $id_vt = $L['idvt'] ?? '';
+        $type = $L['type'] ?? '';
+        $controle = bool_from_oui($L['controle'] ?? '');
+
+        $seance_dup_key = implode('|', [
+                $date_sql ?? 'NULLDATE',
+                $heure_sql,
+                $duree_sql,
+                "ENS:$ens_code",
+                "PROG:$prog_key"
+        ]);
+
+        $BULK_DATA['seances'][$seance_dup_key] = [
+                'id_vt' => $id_vt,
+                'date' => $date_sql,
+                'heure' => $heure_sql,
+                'duree' => $duree_sql,
+                'type' => $type!==''?$type:'CM',
+                'prog_key' => $prog_key,
+                'ens_code' => $ens_code,
+                'groupes' => $L['groupes'] ?? null,
+                'salles' => $L['salles'] ?? null,
+                'profs' => $L['profs'] ?? null,
+                'controle' => $controle,
+        ];
+
+        $BULK_DATA['raw_absence_rows'][] = [
+                'user_key' => $user_key,
+                'seance_dup_key' => $seance_dup_key,
+                'presence' => map_presence_enum($L['absentpresent'] ?? ''),
+                'justification' => map_justif_enum($L['justification'] ?? ''),
+                'motif' => $L['motifabsence'] ?? ($L['motif'] ?? null),
+                'commentaire' => $L['commentaire'] ?? null,
+        ];
+    }
+}
+
+function bulk_upsert_and_cache_data(PDO $db) {
+    global $BULK_DATA, $CACHE, $ERREURS_IMPORT;
+
+    // --- 1. Programmes (INCHANGÉ) ---
+    if (!empty($BULK_DATA['programmes'])) {
+        $values = []; $params = []; $i = 0;
+        foreach ($BULK_DATA['programmes'] as $key => $data) {
+            $values[] = "(:l$i, :c$i, :p$i)";
+            $params[":l$i"] = $data['libelle']; $params[":c$i"] = $data['composante']; $params[":p$i"] = $data['public'];
+            $i++;
+        }
+        $sql = "INSERT INTO programme(libelle,composante,public) VALUES " . implode(',', $values) . " ON CONFLICT (libelle,composante,public) DO UPDATE SET libelle=EXCLUDED.libelle RETURNING id, libelle, composante, public";
+        $stmt = $db->prepare($sql); $stmt->execute($params);
+        foreach ($stmt->fetchAll() as $row) {
+            $key = $row['libelle'] . '|' . $row['composante'] . '|' . $row['public'];
+            $CACHE['programme'][$key] = (int)$row['id'];
+        }
+    }
+
+    if (!empty($BULK_DATA['matieres'])) {
+        $values = []; $params = []; $i = 0;
+        foreach ($BULK_DATA['matieres'] as $key => $data) {
+            $values[] = "(:c$i, :l$i)";
+            $params[":c$i"] = $data['code']; $params[":l$i"] = $data['libelle'];
+            $i++;
+        }
+        $sql = "INSERT INTO matiere(code,libelle) VALUES " . implode(',', $values) . " ON CONFLICT (code) DO UPDATE SET libelle=EXCLUDED.libelle RETURNING id, code";
+        $stmt = $db->prepare($sql); $stmt->execute($params);
+        foreach ($stmt->fetchAll() as $row) {
+            $CACHE['matiere'][$row['code']] = (int)$row['id'];
+        }
+    }
+
+    if (!empty($BULK_DATA['enseignements'])) {
+        $values = []; $params = []; $i = 0;
+        foreach ($BULK_DATA['enseignements'] as $key => $data) {
+            $id_mat = $CACHE['matiere'][$data['mat_code']] ?? null;
+            if ($id_mat === null) {
+                if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Matière {$data['mat_code']} introuvable pour enseignement {$key}. Ignoré.";
+                continue;
+            }
+            $values[] = "(:c$i, :l$i, :m$i)";
+            $params[":c$i"] = $data['code']; $params[":l$i"] = $data['libelle']; $params[":m$i"] = $id_mat;
+            $i++;
+        }
+        if(!empty($values)) {
+            $sql = "INSERT INTO enseignement(code,libelle,id_matiere) VALUES " . implode(',', $values) . " ON CONFLICT (code) DO UPDATE SET libelle=EXCLUDED.libelle, id_matiere=EXCLUDED.id_matiere RETURNING id, code";
+            $stmt = $db->prepare($sql); $stmt->execute($params);
+            foreach ($stmt->fetchAll() as $row) {
+                $CACHE['enseignement'][$row['code']] = (int)$row['id'];
+            }
+        }
+    }
+
+    if (!empty($BULK_DATA['utilisateurs'])) {
+        $values = []; $params = []; $i = 0;
+        $default_hash = 'import_vt';
+        $default_role = 'ETUDIANT';
+
+        foreach ($BULK_DATA['utilisateurs'] as $key => $data) {
+            $values[] = "( :i$i, :n$i, :p$i, :p2$i, :dn$i, :e$i, :ine$i, '$default_hash', '$default_role'::role )";
+            $params[":i$i"] = $data['identifiant'];
+            $params[":n$i"] = $data['nom'];
+            $params[":p$i"] = $data['prenom'];
+            $params[":p2$i"] = $data['prenom2'];
+            $params[":dn$i"] = $data['date_naissance'];
+            $email = ($data['email'] === $data['identifiant'] . '@vt.local') ? $data['identifiant'] . '@uphf.fr' : $data['email'];
+            $params[":e$i"] = $email;
+            $params[":ine$i"] = $data['ine'];
+            $i++;
+        }
+
+        $sql = "
+            INSERT INTO utilisateur(identifiant,nom,prenom,prenom2,date_naissance,email,ine,mot_de_passe_hash,role)
+            VALUES " . implode(',', $values) . "
+            ON CONFLICT (identifiant) DO UPDATE
+            SET nom=EXCLUDED.nom, prenom=EXCLUDED.prenom, prenom2=EXCLUDED.prenom2, date_naissance=EXCLUDED.date_naissance, email=EXCLUDED.email, ine=EXCLUDED.ine
+            RETURNING id, identifiant
+        ";
+
+        $stmt = $db->prepare($sql); $stmt->execute($params);
+        foreach ($stmt->fetchAll() as $row) {
+            $CACHE['utilisateur'][$row['identifiant']] = (int)$row['id'];
+        }
+    }
+
+    if (!empty($BULK_DATA['seances'])) {
+        $values = []; $params = []; $i = 0;
+
+        $processed_seance_keys = [];
+
+        foreach ($BULK_DATA['seances'] as $key => $data) {
+            $id_prog = $CACHE['programme'][$data['prog_key']] ?? null;
+            $id_ens = $CACHE['enseignement'][$data['ens_code']] ?? null;
+            if ($id_prog === null || $id_ens === null) {
+                if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Programme ou Enseignement ID introuvable pour séance {$data['ens_code']}/{$data['prog_key']}. Ignoré.";
+                continue;
+            }
+
+            $values[] = "( :v$i, :d$i, :h$i, :du$i, :t$i, :ip$i, :ie$i, :g$i, :s$i, :p$i, :c$i )";
+            $params[":v$i"] = $data['id_vt'] !== '' ? $data['id_vt'] : null;
+            $params[":d$i"] = $data['date'];
+            $params[":h$i"] = $data['heure'];
+            $params[":du$i"] = $data['duree'];
+            $params[":t$i"] = $data['type'];
+            $params[":ip$i"] = $id_prog;
+            $params[":ie$i"] = $id_ens;
+            $params[":g$i"] = $data['groupes'];
+            $params[":s$i"] = $data['salles'];
+            $params[":p$i"] = $data['profs'];
+            $params[":c$i"] = $data['controle'] ? 1 : 0;
+
+            $processed_seance_keys[] = [
+                    'key' => $key,
+                    'id_prog' => $id_prog,
+                    'id_ens' => $id_ens
+            ];
+            $i++;
+        }
+
+        if(!empty($values)) {
+            $sql = "
+                INSERT INTO seance(id_vt,date,heure,duree,type,id_programme,id_enseignement,groupes,salles,profs,controle)
+                VALUES " . implode(',', $values) . "
+                ON CONFLICT (date,heure,duree,id_enseignement,id_programme) DO UPDATE
+                SET id_vt=COALESCE(EXCLUDED.id_vt, seance.id_vt), type=EXCLUDED.type, groupes=EXCLUDED.groupes, salles=EXCLUDED.salles, profs=EXCLUDED.profs, controle=EXCLUDED.controle
+                RETURNING id; 
+            ";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+
+            if (!empty($processed_seance_keys)) {
+                $unique_id_vts = array_filter(array_column($BULK_DATA['seances'], 'id_vt'));
+
+                if (!empty($unique_id_vts)) {
+                    $placeholders = [];
+                    $select_params = [];
+                    $j = 0;
+                    foreach ($unique_id_vts as $id_vt) {
+                        $placeholders[] = ":v$j";
+                        $select_params[":v$j"] = $id_vt;
+                        $j++;
+                    }
+
+                    $sql_re_cache = "
+                        SELECT id, id_vt, date, heure, duree, id_enseignement, id_programme
+                        FROM Seance
+                        WHERE id_vt IN (" . implode(', ', $placeholders) . ")
+                    ";
+
+                    $st_cache = $db->prepare($sql_re_cache);
+                    $st_cache->execute($select_params);
+                    $cached_rows = $st_cache->fetchAll();
+
+                    $cache_by_id_vt = [];
+                    foreach ($cached_rows as $row) {
+                        $cache_by_id_vt[$row['id_vt']] = $row;
+                    }
+
+                    foreach ($BULK_DATA['seances'] as $seance_key => $data) {
+                        if (isset($cache_by_id_vt[$data['id_vt']])) {
+                            $CACHE['seance'][$seance_key] = (int)$cache_by_id_vt[$data['id_vt']]['id'];
+                        } else {
+                            $sql_fallback_cache = "
+                                SELECT id FROM Seance
+                                WHERE date = :d AND heure = :h AND duree = :du AND id_enseignement = :ie AND id_programme = :ip
+                                LIMIT 1
+                            ";
+                            $st_fallback = $db->prepare($sql_fallback_cache);
+                            $st_fallback->execute([
+                                    ':d' => $data['date'],
+                                    ':h' => $data['heure'],
+                                    ':du' => $data['duree'],
+                                    ':ie' => $id_ens,
+                                    ':ip' => $id_prog
+                            ]);
+                            $id_seance = $st_fallback->fetchColumn();
+
+                            if ($id_seance !== false) {
+                                $CACHE['seance'][$seance_key] = (int)$id_seance;
+                            } else {
+                                if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Erreur: Séance {$seance_key} non trouvée après insertion (fallback). Problème de PK.";
+                            }
+                        }
+                    }
+                } else {
+                    foreach ($BULK_DATA['seances'] as $seance_key => $data) {
+                        $id_prog = $CACHE['programme'][$data['prog_key']] ?? null;
+                        $id_ens = $CACHE['enseignement'][$data['ens_code']] ?? null;
+                        if ($id_prog === null || $id_ens === null) continue;
+
+                        $sql_fallback_cache = "
+                            SELECT id FROM Seance
+                            WHERE date = :d AND heure = :h AND duree = :du AND id_enseignement = :ie AND id_programme = :ip
+                            LIMIT 1
+                        ";
+                        $st_fallback = $db->prepare($sql_fallback_cache);
+                        $st_fallback->execute([
+                                ':d' => $data['date'],
+                                ':h' => $data['heure'],
+                                ':du' => $data['duree'],
+                                ':ie' => $id_ens,
+                                ':ip' => $id_prog
+                        ]);
+                        $id_seance = $st_fallback->fetchColumn();
+
+                        if ($id_seance !== false) {
+                            $CACHE['seance'][$seance_key] = (int)$id_seance;
+                        } else {
+                            if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Erreur: Séance {$seance_key} non trouvée après insertion (Fallback sans ID_VT).";
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+
+function flush_absences(PDO $db){
+    global $ABSENCE_BATCH;
+    if(!$ABSENCE_BATCH) return;
+
+    $values=[]; $params=[]; $i=0;
+    foreach($ABSENCE_BATCH as $row){
+        [$u,$s,$pr,$ju,$m,$c] = $row;
+        $values[] = "(:u$i,:s$i,'$pr'::presenceetat,'$ju'::justifetat,:m$i,:c$i)";
+        $params[":u$i"]=$u; $params[":s$i"]=$s;
+        $params[":m$i"]=$m; $params[":c$i"]=$c;
+        $i++;
+    }
+    $sql="INSERT INTO absence(id_utilisateur,id_seance,presence,justification,motif,commentaire)
+          VALUES ".implode(',', $values)."
+          ON CONFLICT (id_utilisateur,id_seance) DO UPDATE
+          SET presence=EXCLUDED.presence,
+              justification=EXCLUDED.justification,
+              motif=EXCLUDED.motif,
+              commentaire=EXCLUDED.commentaire";
+    $stmt=$db->prepare($sql);
+    $stmt->execute($params);
+    $ABSENCE_BATCH = [];
+}
+
+function inserer_absences(PDO $db) {
+    global $BULK_DATA, $CACHE, $ABSENCE_BATCH, $ERREURS_IMPORT;
+    $ok = 0;
+
+    foreach ($BULK_DATA['raw_absence_rows'] as $row) {
+        $user_key = $row['user_key'];
+        $seance_dup_key = $row['seance_dup_key'];
+
+        $id_user = $CACHE['utilisateur'][$user_key] ?? null;
+        $id_seance = $CACHE['seance'][$seance_dup_key] ?? null;
+
+        if ($id_user === null) {
+            if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Erreur: Utilisateur {$user_key} ID introuvable. Absence ignorée.";
+            continue;
+        }
+        if ($id_seance === null) {
+            if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Erreur: Séance ID introuvable pour la clé: " . $seance_dup_key . ". Absence ignorée.";
+            continue;
+        }
+
+        $ABSENCE_BATCH[] = [
+                $id_user,
+                $id_seance,
+                $row['presence'],
+                $row['justification'],
+                $row['motif'],
+                $row['commentaire']
+        ];
+
+        if(count($ABSENCE_BATCH) >= ABS_BATCH_SIZE) flush_absences($db);
+
+        $ok++;
+    }
+
+    flush_absences($db);
+    return $ok;
+}
+
+function resumer_donnees(array $lignes){
     $types_counts = [];
     $diagP=[]; $diagJ=[]; $diagT=[]; $ctrl=0; $ds=0; $total=0;
     $final = []; $ids_absents=[];
 
-    foreach ($lignes as $l) {
+    foreach ($lignes as $L) {
         $total++;
 
-        $type_raw = $l['type'] ?? '';
+        $type_raw = $L['type'] ?? '';
         $type_norm = norm_type($type_raw);
         $types_counts[$type_norm] = ($types_counts[$type_norm] ?? 0) + 1;
 
-        $presence_raw = $l['absentpresent'] ?? '';
-        $justif_raw = $l['justification'] ?? '';
-        $cont_raw = $l['controle'] ?? '';
+        $presence_raw = $L['absentpresent'] ?? '';
+        $justif_raw = $L['justification'] ?? '';
+        $cont_raw = $L['controle'] ?? '';
         $t = ($type_raw==='') ? '(vide)' : $type_raw; $diagT[$t] = ($diagT[$t]??0)+1;
         $p = ($presence_raw==='') ? '(vide)' : $presence_raw; $diagP[$p] = ($diagP[$p]??0)+1;
         $j = ($justif_raw==='') ? '(vide)' : $justif_raw; $diagJ[$j] = ($diagJ[$j]??0)+1;
@@ -218,39 +651,38 @@ function resumer_donnees($lignes){
         if (bool_from_oui($cont_raw)) $ctrl++;
         if (preg_match('/\bds\b/i',' '.sans_accents(strtolower($type_raw)).' ')) $ds++;
 
-        $nom = $l['nom'] ?? '';
-        $prenom = $l['prenom'] ?? '';
-        $ident = $l['identifiant'] ?? '';
+        $nom = $L['nom'] ?? '';
+        $prenom = $L['prenom'] ?? '';
+        $ident = $L['identifiant'] ?? '';
         if ($ident==='') {
+            if($nom==='' && $prenom==='') continue;
             $ident = strtolower(preg_replace('/[^a-z0-9]+/','.', sans_accents($nom.'.'.$prenom)));
             $ident = trim($ident, '.');
         }
 
-        $date_sql = parse_date_sql($l['date'] ?? ($l['jour'] ?? ''));
-        $heure_sql = heure_to_sql($l['heure'] ?? ($l['heuredebut'] ?? ''));
-        $duree_sql = duree_to_interval($l['duree'] ?? '');
+        $date_sql = parse_date_sql($L['date'] ?? ($L['jour'] ?? ''));
+        $heure_sql = heure_to_sql($L['heure'] ?? ($L['heuredebut'] ?? ''));
+        $duree_sql = duree_to_interval($L['duree'] ?? '');
 
-        $public = $l['public'] ?? '';
-        $comp = $l['composante'] ?? '';
-        $dipl = $l['diplomes'] ?? '';
+        $public = $L['public'] ?? '';
+        $comp = $L['composante'] ?? '';
+        $dipl = $L['diplomes'] ?? '';
         $lib_prog = ($dipl!==''?$dipl:'BUT INFORMATIQUE');
         $comp_prog = ($comp!==''?$comp:'IUT');
         $pub_prog = ($public!==''?$public:'FI');
         $prog_key = $lib_prog.'|'.$comp_prog.'|'.$pub_prog;
 
-        $ens_code = $l['idenseignement'] ?? ($l['identifiantdelenseignement'] ?? '');
+        $ens_code = $L['idenseignement'] ?? ($L['identifiantdelenseignement'] ?? '');
         $ens_code_final = ($ens_code!=='') ? $ens_code : 'ENS-UNKNOWN';
 
-        $id_vt = $l['idvt'] ?? '';
-        $seance_key = ($id_vt!=='')
-                ? 'IDVT:'.$id_vt
-                : implode('|', [
-                        $date_sql ?? 'NULLDATE',
-                        $heure_sql,
-                        $duree_sql,
-                        'ENS:'.$ens_code_final,
-                        'PROG:'.$prog_key
-                ]);
+        $id_vt = $L['idvt'] ?? '';
+        $seance_key = implode('|', [
+                $date_sql ?? 'NULLDATE',
+                $heure_sql,
+                $duree_sql,
+                "ENS:".$ens_code_final,
+                "PROG:".$prog_key
+        ]);
 
         $pr_enum = map_presence_enum($presence_raw);
         $ju_enum = map_justif_enum($justif_raw);
@@ -296,277 +728,153 @@ function resumer_donnees($lignes){
     ];
 }
 
-/* ========= CONNEXION BDD ========= */
-function connexion_bdd(){
-    if(!in_array('pgsql',PDO::getAvailableDrivers(),true))
-        throw new Exception("Le driver PDO 'pgsql' n'est pas chargé (extension pdo_pgsql).");
+function createImplicitPresentRecords(PDO $db, string $today) {
+    global $ERREURS_IMPORT;
+    $sql_absent_yesterday = "
+        WITH LastAbsence AS (
+            SELECT 
+                a.id_utilisateur, 
+                MAX(s.date) AS last_abs_date,
+                (SELECT a_inner.id_seance FROM Absence a_inner JOIN Seance s_inner ON s_inner.id = a_inner.id_seance WHERE a_inner.id_utilisateur = a.id_utilisateur AND a_inner.presence = 'ABSENT' ORDER BY s_inner.date DESC, a_inner.id DESC LIMIT 1) as last_absent_seance_id
+            FROM Absence a
+            JOIN Seance s ON s.id = a.id_seance
+            WHERE a.presence = 'ABSENT' 
+              AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
+              AND s.date < :today
+              AND NOT EXISTS (
+                  SELECT 1 FROM Absence a_present 
+                  JOIN Seance s_present ON s_present.id = a_present.id_seance
+                  WHERE a_present.id_utilisateur = a.id_utilisateur
+                    AND a_present.presence = 'PRESENT'
+                    AND s_present.date > s.date
+              )
+            GROUP BY a.id_utilisateur
+        )
+        SELECT u.id, u.identifiant, la.last_absent_seance_id FROM LastAbsence la
+        JOIN Utilisateur u ON u.id = la.id_utilisateur
+        WHERE la.last_absent_seance_id IS NOT NULL;
+    ";
 
-    $neonUrl = $_ENV['NEON_URL'] ?? '';
-    $p = parse_url($neonUrl);
+    try {
+        $students_to_mark_present = $db->prepare($sql_absent_yesterday);
+        $students_to_mark_present->execute([':today' => $today]);
+        $absent_students = $students_to_mark_present->fetchAll(\PDO::FETCH_ASSOC);
 
-    if(!$p || !isset($p['host'])) throw new Exception("NEON_URL invalide.");
+        $count = 0;
+        foreach ($absent_students as $student) {
+            $last_seance_id = (int)$student['last_absent_seance_id'];
+            $user_id = (int)$student['id'];
+            $user_identifiant = $student['identifiant'];
 
-    // Extraction de l'Endpoint ID (e.g., 'ep-sweet-butterfly-agv0uvto')
-    $hostParts = explode('-pooler', $p['host']);
-    $endpointId = $hostParts[0];
+            $sql_clone_seance = "
+                INSERT INTO Seance (id_vt, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle)
+                SELECT 
+                    'IMPLICIT-' || :uid || '-' || :today,
+                    :today,
+                    heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle
+                FROM Seance
+                WHERE id = :last_seance_id 
+                ON CONFLICT (date,heure,duree,id_enseignement,id_programme) DO UPDATE 
+                SET id_vt = EXCLUDED.id_vt
+                RETURNING id;
+            ";
+            $stmt_clone = $db->prepare($sql_clone_seance);
+            $stmt_clone->execute([':uid' => $user_id, ':today' => $today, ':last_seance_id' => $last_seance_id]);
+            $new_seance_id = (int)$stmt_clone->fetchColumn();
 
-    if (empty($endpointId)) {
-        throw new Exception("Impossible d'extraire l'Endpoint ID à partir de l'hôte Neon. Format attendu: <id>-pooler.<region>...");
-    }
-
-    // CORRECTION DÉFINITIVE: Construction explicite du DSN, en s'assurant que
-    // l'option 'options=' est citée comme dans le fichier db.php.
-    $host = $p['host'];
-    $port = $p['port'] ?? 5432;
-    $dbname = ltrim($p['path']??'','/');
-
-    // Construction du DSN en incluant explicitement l'option 'options'
-    $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require;connect_timeout=10;options='endpoint={$endpointId}'";
-
-
-    $db = new PDO($dsn,$p['user']??'', $p['pass']??'', [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => true,   // nécessaire avec PgBouncer + ENUM
-    ]);
-    $db->exec("SET statement_timeout TO '55s'");
-    return $db;
-}
-
-/* ========= RUN WRAPPER ========= */
-function run(PDO $db, callable $fn, string $label){
-    try { return $fn(); }
-    catch(Throwable $e){ throw new Exception("$label: ".$e->getMessage(), 0, $e); }
-}
-
-/* ========= CACHES & STATEMENTS ========= */
-$CACHE = [
-        'utilisateur'=>[], // ident => id
-        'programme' =>[], // "lib|comp|pub" => id
-        'matiere' =>[], // code => id
-        'enseignement'=>[],// code => id
-        'seance' =>[], // clé => id
-];
-
-$STMT = [
-        'sel_user'=>null, 'upd_user'=>null, 'ins_user'=>null,
-        'sel_prog'=>null, 'ins_prog'=>null,
-        'sel_mat'=>null, 'ins_mat'=>null,
-        'sel_ens'=>null, 'ins_ens'=>null,
-        'sel_sea_dup'=>null, 'sel_sea_vt'=>null, 'ins_sea'=>null,
-];
-
-/* ========= UPSERT HELPERS (CACHÉS) ========= */
-function get_or_create_utilisateur(PDO $db,$identifiant,$nom,$prenom,$email=null,$prenom2=null,$date_naissance=null,$ine=null){
-    global $CACHE,$STMT;
-    if(isset($CACHE['utilisateur'][$identifiant])) return $CACHE['utilisateur'][$identifiant];
-
-    if(!$STMT['sel_user']) $STMT['sel_user']=$db->prepare("SELECT id FROM utilisateur WHERE identifiant=:i");
-    $STMT['sel_user']->execute([':i'=>$identifiant]);
-    $r=$STMT['sel_user']->fetch();
-    if($r){
-        if(!$STMT['upd_user']) $STMT['upd_user']=$db->prepare("UPDATE utilisateur SET nom=:n, prenom=:p, prenom2=:p2, date_naissance=:dn, ine=:ine WHERE id=:id");
-        $STMT['upd_user']->execute([
-                ':n'=>$nom,':p'=>$prenom,':p2'=>($prenom2!==''?$prenom2:null),
-                ':dn'=>($date_naissance!==null?$date_naissance:null),
-                ':ine'=>($ine!==''?$ine:null),
-                ':id'=>$r['id']
-        ]);
-        return $CACHE['utilisateur'][$identifiant]=(int)$r['id'];
-    }
-    $email = ($email && $email!=='') ? $email : ($identifiant.'@vt.local');
-    if(!$STMT['ins_user']) $STMT['ins_user']=$db->prepare("INSERT INTO utilisateur(identifiant,nom,prenom,prenom2,date_naissance,email,ine,mot_de_passe_hash,role)
-        VALUES(:i,:n,:p,:p2,:dn,:e,:ine,'import_vt','ETUDIANT') RETURNING id");
-    $STMT['ins_user']->execute([
-            ':i'=>$identifiant,':n'=>$nom,':p'=>$prenom,':p2'=>($prenom2!==''?$prenom2:null),
-            ':dn'=>($date_naissance!==null?$date_naissance:null),
-            ':e'=>$email,':ine'=>($ine!==''?$ine:null)
-    ]);
-    return $CACHE['utilisateur'][$identifiant]=(int)$STMT['ins_user']->fetch()['id'];
-}
-function get_or_create_programme(PDO $db,$lib,$comp,$pub){
-    global $CACHE,$STMT;
-    $lib=$lib!==''?$lib:'BUT INFORMATIQUE'; $comp=$comp!==''?$comp:'IUT'; $pub=$pub!==''?$pub:'FI';
-    $key="$lib|$comp|$pub";
-    if(isset($CACHE['programme'][$key])) return $CACHE['programme'][$key];
-
-    if(!$STMT['sel_prog']) $STMT['sel_prog']=$db->prepare("SELECT id FROM programme WHERE libelle=:l AND composante=:c AND public=:p");
-    $STMT['sel_prog']->execute([':l'=>$lib,':c'=>$comp,':p'=>$pub]);
-    $r=$STMT['sel_prog']->fetch(); if($r) return $CACHE['programme'][$key]=(int)$r['id'];
-
-    if(!$STMT['ins_prog']) $STMT['ins_prog']=$db->prepare("INSERT INTO programme(libelle,composante,public) VALUES(:l,:c,:p) RETURNING id");
-    $STMT['ins_prog']->execute([':l'=>$lib,':c'=>$comp,':p'=>$pub]);
-    return $CACHE['programme'][$key]=(int)$STMT['ins_prog']->fetch()['id'];
-}
-function get_or_create_matiere(PDO $db,$code,$lib){
-    global $CACHE,$STMT;
-    $code=$code!==''?$code:'MAT-UNKNOWN'; $lib=$lib!==''?$lib:'Matiere inconnue';
-    if(isset($CACHE['matiere'][$code])) return $CACHE['matiere'][$code];
-
-    if(!$STMT['sel_mat']) $STMT['sel_mat']=$db->prepare("SELECT id FROM matiere WHERE code=:c");
-    $STMT['sel_mat']->execute([':c'=>$code]); $r=$STMT['sel_mat']->fetch(); if($r) return $CACHE['matiere'][$code]=(int)$r['id'];
-
-    if(!$STMT['ins_mat']) $STMT['ins_mat']=$db->prepare("INSERT INTO matiere(code,libelle) VALUES(:c,:l) RETURNING id");
-    $STMT['ins_mat']->execute([':c'=>$code,':l'=>$lib]);
-    return $CACHE['matiere'][$code]=(int)$STMT['ins_mat']->fetch()['id'];
-}
-function get_or_create_enseignement(PDO $db,$code,$lib,$id_mat){
-    global $CACHE,$STMT;
-    $code=$code!==''?$code:'ENS-UNKNOWN'; $lib=$lib!==''?$lib:'Enseignement inconnu';
-    if(isset($CACHE['enseignement'][$code])) return $CACHE['enseignement'][$code];
-
-    if(!$STMT['sel_ens']) $STMT['sel_ens']=$db->prepare("SELECT id FROM enseignement WHERE code=:c");
-    $STMT['sel_ens']->execute([':c'=>$code]); $r=$STMT['sel_ens']->fetch(); if($r) return $CACHE['enseignement'][$code]=(int)$r['id'];
-
-    if(!$STMT['ins_ens']) $STMT['ins_ens']=$db->prepare("INSERT INTO enseignement(code,libelle,id_matiere) VALUES(:c,:l,:m) RETURNING id");
-    $STMT['ins_ens']->execute([':c'=>$code,':l'=>$lib,':m'=>$id_mat]);
-    return $CACHE['enseignement'][$code]=(int)$STMT['ins_ens']->fetch()['id'];
-}
-function get_or_create_seance(PDO $db,$id_vt,$date,$heure,$duree,$type,$id_prog,$id_ens,$groupes,$salles,$profs,$controle){
-    global $CACHE,$STMT;
-    if($date===null) throw new Exception("Date manquante (format non reconnu)");
-
-    if($id_vt!==''){
-        if(!$STMT['sel_sea_vt']) $STMT['sel_sea_vt']=$db->prepare("SELECT id FROM seance WHERE id_vt=:v");
-        $STMT['sel_sea_vt']->execute([':v'=>$id_vt]);
-        $r=$STMT['sel_sea_vt']->fetch(); if($r) return (int)$r['id'];
-    }
-
-    $dup_key = "$date|$heure|$duree|$id_prog|$id_ens";
-    if(isset($CACHE['seance'][$dup_key])) return $CACHE['seance'][$dup_key];
-
-    if(!$STMT['sel_sea_dup']) $STMT['sel_sea_dup']=$db->prepare("SELECT id FROM seance WHERE date=:d AND heure=:h AND duree=:du AND id_enseignement=:ie AND id_programme=:ip");
-    $STMT['sel_sea_dup']->execute([':d'=>$date,':h'=>$heure,':du'=>$duree,':ie'=>$id_ens,':ip'=>$id_prog]);
-    $r=$STMT['sel_sea_dup']->fetch(); if($r) return $CACHE['seance'][$dup_key]=(int)$r['id'];
-
-    if(!$STMT['ins_sea']) $STMT['ins_sea']=$db->prepare("INSERT INTO seance(id_vt,date,heure,duree,type,id_programme,id_enseignement,groupes,salles,profs,controle)
-        VALUES(:v,:d,:h,:du,:t,:ip,:ie,:g,:s,:p,:c) RETURNING id");
-    $STMT['ins_sea']->execute([
-            ':v'=>$id_vt!==''?$id_vt:null, ':d'=>$date, ':h'=>$heure, ':du'=>$duree,
-            ':t'=>$type!==''?$type:'CM', ':ip'=>$id_prog, ':ie'=>$id_ens,
-            ':g'=>$groupes!==''?$groupes:null, ':s'=>$salles!==''?$salles:null,
-            ':p'=>$profs!==''?$profs:null, ':c'=>$controle?1:0
-    ]);
-    return $CACHE['seance'][$dup_key]=(int)$STMT['ins_sea']->fetch()['id'];
-}
-
-/* ========= BATCH UPSERT ABSENCES ========= */
-$ABSENCE_BATCH = [];
-define('ABS_BATCH_SIZE', 800);
-
-function flush_absences(PDO $db){
-    global $ABSENCE_BATCH;
-    if(!$ABSENCE_BATCH) return;
-
-    $values=[]; $params=[]; $i=0;
-    foreach($ABSENCE_BATCH as $row){
-        [$u,$s,$pr,$ju,$m,$c] = $row;
-        // pr, ju : valeurs d'ENUM (labels) validées en amont
-        $values[] = "(:u$i,:s$i,'$pr'::presenceetat,'$ju'::justifetat,:m$i,:c$i)";
-        $params[":u$i"]=$u; $params[":s$i"]=$s;
-        $params[":m$i"]=$m!==''?$m:null; $params[":c$i"]=$c!==''?$c:null;
-        $i++;
-    }
-    $sql="INSERT INTO absence(id_utilisateur,id_seance,presence,justification,motif,commentaire)
-          VALUES ".implode(',', $values)."
-          ON CONFLICT (id_utilisateur,id_seance) DO UPDATE
-          SET presence=EXCLUDED.presence,
-              justification=EXCLUDED.justification,
-              motif=EXCLUDED.motif,
-              commentaire=EXCLUDED.commentaire";
-    $stmt=$db->prepare($sql);
-    $stmt->execute($params);
-    $ABSENCE_BATCH = [];
-}
-
-/* ========= INSERTION ========= */
-function inserer_donnees(PDO $db,$lignes){
-    global $ERREURS_IMPORT,$ABSENCE_BATCH;
-    $ok=0;
-
-    foreach($lignes as $L){
-        $nom = $L['nom'] ?? '';
-        $prenom = $L['prenom'] ?? '';
-        $ident = $L['identifiant'] ?? '';
-        if($ident===''){
-            if($nom==='' && $prenom===''){
-                if(count($ERREURS_IMPORT)<5)$ERREURS_IMPORT[]="Ligne ignorée: ni identifiant ni nom/prénom.";
+            if (!$new_seance_id) {
+                $ERREURS_IMPORT[] = "Erreur: Impossible de créer une séance implicite pour le retour de {$user_identifiant}.";
                 continue;
             }
-            $ident = strtolower(preg_replace('/[^a-z0-9]+/','.', sans_accents($nom.'.'.$prenom)));
-            $ident = trim($ident,'.');
+
+            $sql_insert_presence = "
+                INSERT INTO Absence (id_utilisateur, id_seance, presence, justification, motif, commentaire)
+                VALUES (:uid, :sid, 'PRESENT'::presenceetat, 'INCONNU'::justifetat, 'Retour en cours implicite', NULL)
+                ON CONFLICT (id_utilisateur, id_seance) DO UPDATE 
+                SET presence = 'PRESENT'::presenceetat;
+            ";
+            $stmt_insert_presence = $db->prepare($sql_insert_presence);
+            $stmt_insert_presence->execute([':uid' => $user_id, ':sid' => $new_seance_id]);
+
+            $count++;
         }
 
-        $prenom2 = $L['prenom2'] ?? '';
-        $dn_raw = $L['datedenaissance'] ?? '';
-        $date_naissance = ($dn_raw!=='') ? parse_date_sql($dn_raw) : null;
-        $ine = $L['ine'] ?? '';
-        $email = $L['email'] ?? '';
-
-        $presence= $L['absentpresent'] ?? '';
-        $justif = $L['justification'] ?? '';
-
-        $date_sql = parse_date_sql($L['date'] ?? ($L['jour'] ?? ''));
-        $heure_sql = heure_to_sql($L['heure'] ?? ($L['heuredebut'] ?? ''));
-        $duree_sql = duree_to_interval($L['duree'] ?? '');
-
-        $type = $L['type'] ?? '';
-        $mat_lib = $L['matiere'] ?? '';
-        $mat_code = $L['identifiantmatiere'] ?? '';
-        $ens_lib = $L['enseignement'] ?? '';
-        $ens_code = $L['idenseignement'] ?? ($L['identifiantdelenseignement'] ?? '');
-        $id_vt = $L['idvt'] ?? '';
-        $groupes = $L['groupes'] ?? '';
-        $salles = $L['salles'] ?? '';
-        $profs = $L['profs'] ?? '';
-        $controle = bool_from_oui($L['controle'] ?? '');
-
-        $public = $L['public'] ?? '';
-        $comp = $L['composante'] ?? '';
-        $dipl = $L['diplomes'] ?? '';
-
-        $motif = $L['motifabsence'] ?? ($L['motif'] ?? '');
-        $comment = $L['commentaire'] ?? '';
-
-        if ($date_sql === null) {
-            if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Validation date: valeur invalide '".($L['date'] ?? '')."'";
-            continue;
+        if ($count > 0) {
+            error_log("LOGIQUE US: Création de {$count} enregistrements PRESENT implicites pour déclencher le rappel.");
         }
-        if (!preg_match('/hour|minute/i', $duree_sql)) {
-            if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[] = "Validation durée: valeur illisible '".($L['duree'] ?? '')."' → '".$duree_sql."'";
-            continue;
-        }
-
-        $pr_enum = map_presence_enum($presence);
-        $ju_enum = map_justif_enum($justif);
-
-        try{
-            $id_prog = run($db, fn()=>get_or_create_programme($db,$dipl,$comp,$public), 'Programme');
-            $id_mat = run($db, fn()=>get_or_create_matiere($db,$mat_code,$mat_lib), 'Matiere');
-
-            $ens_code_final = ($ens_code!=='') ? $ens_code : 'ENS-UNKNOWN';
-            $ens_lib_final = ($ens_lib!=='') ? $ens_lib : (($mat_lib!=='') ? $mat_lib : $mat_code);
-            $id_ens = run($db, fn()=>get_or_create_enseignement($db,$ens_code_final,$ens_lib_final,$id_mat), 'Enseignement');
-
-            $id_seance = run($db, fn()=>get_or_create_seance($db,$id_vt,$date_sql,$heure_sql,$duree_sql,$type,$id_prog,$id_ens,$groupes,$salles,$profs,$controle), 'Seance');
-
-            $id_user = run($db, fn()=>get_or_create_utilisateur($db,$ident,$nom,$prenom,$email,$prenom2,$date_naissance,$ine), 'Utilisateur');
-
-            // Batch l'absence (on normalise ici, vérif ENUM en amont)
-            $ABSENCE_BATCH[] = [$id_user,$id_seance,$pr_enum,$ju_enum,$motif,$comment];
-            if(count($ABSENCE_BATCH) >= ABS_BATCH_SIZE) flush_absences($db);
-
-            $ok++;
-        }catch(Throwable $e){
-            if(count($ERREURS_IMPORT)<5) $ERREURS_IMPORT[]=$e->getMessage();
-        }
+    } catch (Throwable $e) {
+        $ERREURS_IMPORT[] = "Erreur fatale lors de l'insertion implicite de présence: " . $e->getMessage();
+        return 0;
     }
-    // dernier flush
-    flush_absences($db);
-    return $ok;
 }
 
-/* ========= CONTRÔLEUR ========= */
+function send_return_reminder_emails(PDO $db) {
+    global $ERREURS_IMPORT;
+
+    $sql_users_returned_today = "
+        WITH ReturnedToday AS (
+            SELECT a.id_utilisateur, a.id_seance, MAX(s.date + s.heure) as last_pres_timestamp
+            FROM Absence a
+            JOIN Seance s ON s.id = a.id_seance
+            WHERE a.presence IN ('PRESENT') 
+              AND s.date = CURRENT_DATE 
+              -- CONDITION ANTI-DOUBLON :
+              AND (a.commentaire IS NULL OR a.commentaire NOT LIKE '%(Rappel envoyé)%')
+            GROUP BY a.id_utilisateur, a.id_seance
+        )
+        SELECT 
+            u.id as id_utilisateur,
+            rt.id_seance,
+            u.email, u.nom, u.prenom, rt.last_pres_timestamp AS date_retour,
+            (SELECT MIN(s_abs.date) 
+             FROM Absence a_abs JOIN Seance s_abs ON s_abs.id = a_abs.id_seance
+             WHERE a_abs.id_utilisateur = u.id AND a_abs.presence = 'ABSENT' 
+               AND a_abs.justification IN ('INCONNU', 'NON_JUSTIFIEE') AND s_abs.date < CURRENT_DATE
+            ) AS oldest_unjustified_abs_date
+        FROM ReturnedToday rt JOIN Utilisateur u ON u.id = rt.id_utilisateur
+        WHERE EXISTS (
+            SELECT 1 FROM Absence a_check JOIN Seance s_check ON s_check.id = a_check.id_seance
+            WHERE a_check.id_utilisateur = u.id AND a_check.presence = 'ABSENT' 
+              AND a_check.justification IN ('INCONNU', 'NON_JUSTIFIEE') AND s_check.date < CURRENT_DATE
+        );
+    ";
+
+    try {
+        $st = $db->prepare($sql_users_returned_today);
+        $st->execute();
+        $absences = $st->fetchAll(\PDO::FETCH_ASSOC);
+        $sentCount = 0;
+
+        foreach ($absences as $abs) {
+            $recipientEmail = trim($abs['email']);
+            if (empty($recipientEmail) || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) continue;
+            if ($abs['oldest_unjustified_abs_date'] === null) continue;
+
+            $dateAbsence = (new DateTime($abs['oldest_unjustified_abs_date']))->format('d/m/Y');
+            $recipientName = trim($abs['prenom'] . ' ' . $abs['nom']);
+
+            $subject = "🔔 Rappel: Justification d'absence requise (Retour détecté)";
+            $body = "<p>Bonjour " . htmlspecialchars($recipientName) . ",</p>
+                    <p>Vous êtes revenu en cours aujourd'hui. Merci de justifier vos absences passées (depuis le $dateAbsence) sous 48h.</p>";
+
+            $result = NotificationService::sendEmail($recipientEmail, $subject, $body, $recipientName);
+
+            if ($result === true) {
+                $sentCount++;
+                // MISE À JOUR DU MARQUEUR ANTI-DOUBLON
+                $upd = $db->prepare("UPDATE Absence SET commentaire = COALESCE(commentaire, '') || ' (Rappel envoyé)' 
+                                     WHERE id_utilisateur = ? AND id_seance = ?");
+                $upd->execute([$abs['id_utilisateur'], $abs['id_seance']]);
+            }
+        }
+        return $sentCount;
+    } catch (Throwable $e) {
+        $ERREURS_IMPORT[] = "Erreur mail: " . $e->getMessage();
+        return 0;
+    }
+}
+
+
 $etat='attente'; $resume=null; $message=''; $date_import=date('d/m/Y à H:i');
 $colonnes_trouvees=[];
 
@@ -581,122 +889,243 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
 
         list($colonnes_trouvees,$rows) = lire_csv($tmp);
         $resume = resumer_donnees($rows);
+        $nbLignesCSV = count($rows);
 
-        $db = connexion_bdd();
-        // ---- transaction unique + sync off ----
-        $db->beginTransaction();
-        $db->exec("SET LOCAL synchronous_commit = OFF");
+        if ($nbLignesCSV === 0) {
+            $db = connexion_bdd();
+            $db->beginTransaction();
+            createImplicitPresentRecords($db, date('Y-m-d'));
 
-        try {
-            $ins = inserer_donnees($db,$rows);
-            if($ins>0){
-                $db->commit();
-                $etat='succes';
-            } else {
-                $db->rollBack();
-                throw new Exception("Aucune ligne insérée (vérifie les colonnes du CSV).");
+            $sent_count = send_return_reminder_emails($db);
+
+            $db->commit();
+            $etat = 'succes';
+            $message = "Fichier vide. Traitement des présences implicites terminé. ({$sent_count} rappel(s) envoyé(s)).";
+        } else {
+            $db = connexion_bdd();
+            $db->beginTransaction();
+            $db->exec("SET LOCAL synchronous_commit = OFF"); // Boost de performance
+
+            try {
+                collect_unique_data($rows);
+
+                bulk_upsert_and_cache_data($db);
+
+                $ins = inserer_absences($db);
+
+                if($ins>0){
+
+                    $sent_count = send_return_reminder_emails($db);
+
+                    $db->commit();
+                    $etat='succes';
+                    $message = "Import réussi. ({$sent_count} rappel(s) envoyé(s)).";
+
+                } else {
+                    if ($db->inTransaction()) { $db->rollBack(); }
+                    throw new Exception("Aucune ligne d'absence insérée (vérifiez les données et les erreurs de cache).");
+                }
+            } catch(Throwable $e){
+                if ($db->inTransaction()) { $db->rollBack(); }
+                throw $e;
             }
-        } catch(Throwable $e){
-            $db->rollBack();
-            throw $e;
         }
     }catch(Exception $e){
         $etat='erreur'; $message=$e->getMessage();
     }
 }
 
-/* ========= UI ========= */
 ?>
 <!doctype html>
-<html lang="fr"><head>
-    <meta charset="utf-8"><title>Import VT</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Import VT — UPHF</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:Arial,Helvetica,sans-serif;background:#e7f6f8;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:24px}
-        .card{background:#fff;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.12);padding:28px;width:760px}
-        .card.succes{background:#2a9d8f;color:#fff}
-        .card.erreur{background:#e63946;color:#fff}
-        h1{margin-bottom:16px}
-        .btn{background:#00798a;color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}
-        .stats{list-style:none;margin-top:12px}
-        .stats li{display:flex;justify-content:space-between;align-items:center;margin:8px 0;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.22)}
-        .note{opacity:.9;margin-top:10px}
-        .small{font-size:13px;opacity:.95;margin-top:10px}
-        .code{font-family:ui-monospace,Consolas,monospace;background:rgba(0,0,0,.1);padding:6px 8px;border-radius:6px;display:inline-block;margin:4px 0}
-        .error-box{background:rgba(255,255,255,.18);padding:12px;border-radius:10px;margin:10px 0}
-        ul.inline{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin-top:6px}
-        ul.inline li{background:rgba(0,0,0,.1);padding:6px 10px;border-radius:999px}
-        input[type=file]{margin-top:6px}
+        :root {
+            --uphf-blue-dark: #004085;
+            --uphf-blue-light: #00798a;
+            --danger-color: #e63946;
+            --success-color: #2a9d8f;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #e7f6f8;
+            min-height: 100vh;
+            padding-top: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .app-header-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--uphf-blue-dark);
+            height: 60px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+        }
+
+        .header-inner-content {
+            display: flex;
+            align-items: center;
+            width: 90%;
+            max-width: 1100px;
+            justify-content: space-between;
+        }
+
+        .header-logo {
+            height: 35px;
+            filter: brightness(0) invert(1);
+        }
+
+        .user-info-logout {
+            display: flex;
+            align-items: center;
+            color: white;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .logout-btn:hover { opacity: 0.9; }
+
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .12);
+            padding: 28px;
+            width: 95%;
+            max-width: 760px;
+            margin-bottom: 30px;
+        }
+
+        .card.succes { background: var(--success-color); color: #fff; }
+        .card.erreur { background: var(--danger-color); color: #fff; }
+
+        h1 { margin-bottom: 16px; text-align: center; }
+
+        .btn {
+            background: var(--uphf-blue-light);
+            color: #fff;
+            border: 0;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            display: block;
+            text-decoration: none;
+        }
+
+        .btn:hover { filter: brightness(1.1); }
+
+        .stats { list-style: none; margin-top: 12px; }
+        .stats li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .22);
+        }
+
+        .error-box {
+            background: rgba(255, 255, 255, .18);
+            padding: 12px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        input[type=file] {
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
-<div class="card <?php echo $etat==='succes'?'succes':($etat==='erreur'?'erreur':''); ?>">
-    <?php if($etat==='attente'): ?>
+
+<header class="app-header-nav">
+    <div class="header-inner-content">
+        <img src="<?= BASE_PATH ?>/connexion/UPHF_logo.svg.png" class="header-logo" alt="UPHF">
+        <div class="user-info-logout">
+            <span>Connecté : <strong><?= $identifiant_nav ?></strong></span>
+            <form action="<?= BASE_PATH ?>/connexion/logout.php" method="POST" style="margin:0;">
+                <button class="logout-btn" type="submit">Déconnexion</button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<div class="card <?php echo $etat === 'succes' ? 'succes' : ($etat === 'erreur' ? 'erreur' : ''); ?>">
+    <?php if ($etat === 'attente'): ?>
         <h1>Importation VT</h1>
+        <p style="text-align:center; color:#666; margin-bottom:15px;">Sélectionnez le fichier CSV pour synchroniser les présences.</p>
         <form method="post" enctype="multipart/form-data">
-            <input type="file" name="csv" accept=".csv" required><br><br>
-            <button class="btn" type="submit">Importer</button>
+            <input type="file" name="csv" accept=".csv" required>
+            <br><br>
+            <button class="btn" type="submit">🚀 Lancer l'importation</button>
         </form>
 
-    <?php elseif($etat==='succes'): ?>
-        <h1>Import réussi</h1>
+    <?php elseif ($etat === 'succes'): ?>
+        <h1>✓ Import réussi</h1>
+        <?php if (!empty($message)): ?>
+            <p style="text-align:center; margin-bottom:12px; font-weight:bold;"><?php echo htmlspecialchars($message); ?></p>
+        <?php endif; ?>
+
         <ul class="stats">
-            <li><span>Total lignes (CSV)</span><b><?php echo (int)$resume['total_lignes']; ?></b></li>
+            <li><span>Lignes traitées</span><b><?php echo (int)$resume['total_lignes']; ?></b></li>
             <li><span>Total absences</span><b><?php echo (int)$resume['total_absences']; ?></b></li>
-            <li><span>Absences justifiées</span><b><?php echo (int)$resume['abs_justifiees']; ?></b></li>
-            <li><span>Absences injustifiées</span><b><?php echo (int)$resume['abs_injustifiees']; ?></b></li>
-            <?php if(isset($resume['abs_inconnu']) && $resume['abs_inconnu']>0): ?>
-                <li><span>Absences justification inconnue</span><b><?php echo (int)$resume['abs_inconnu']; ?></b></li>
-            <?php endif; ?>
-            <li><span>Étudiants absents (uniques)</span><b><?php echo (int)$resume['etudiants_absents']; ?></b></li>
-            <li><span>Évaluations (Contrôle = oui + Type = DS)</span><b><?php echo (int)$resume['evaluations']; ?></b></li>
+            <li><span>Étudiants impactés</span><b><?php echo (int)$resume['etudiants_absents']; ?></b></li>
         </ul>
 
-        <?php if(!empty($resume['types_seances'])): ?>
-            <div class="small" style="margin-top:16px;background:rgba(255,255,255,.15);padding:12px;border-radius:8px">
-                <div><strong>Répartition des séances par type :</strong></div>
-                <ul style="margin-top:8px;list-style:none;display:flex;flex-wrap:wrap;gap:8px">
-                    <?php foreach($resume['types_seances'] as $type=>$count): ?>
-                        <li style="background:rgba(0,0,0,.15);padding:8px 12px;border-radius:8px;font-weight:600">
-                            <?php echo htmlspecialchars($type,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'); ?> : <?php echo $count; ?>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
+        <?php if (!empty($ERREURS_IMPORT)): ?>
+            <div class="error-box">
+                <strong>Alertes de notification :</strong><br>
+                <?php foreach ($ERREURS_IMPORT as $e) echo htmlspecialchars($e) . '<br>'; ?>
             </div>
         <?php endif; ?>
 
-        <p class="note">Import du <?php echo $date_import; ?></p>
-        <form method="get" style="margin-top:12px"><button class="btn" type="submit">Nouveau fichier</button></form>
+        <div style="margin-top:20px;">
+            <a href="sae_vt.php" class="btn">Effectuer un nouvel import</a>
+        </div>
 
     <?php else: ?>
-        <h1>Import échoué</h1>
-        <div class="error-box"><div><?php echo htmlspecialchars($message,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'); ?></div></div>
-
-        <?php if(!empty($colonnes_trouvees)): ?>
-            <div class="small">
-                <div>Colonnes détectées (normalisées + alias) :</div>
-                <ul class="inline">
-                    <?php foreach($colonnes_trouvees as $c): ?>
-                        <li class="code"><?php echo htmlspecialchars($c,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
-
-        <?php global $ERREURS_IMPORT; if(!empty($ERREURS_IMPORT)): ?>
-            <div class="small">
-                <div>Premières erreurs rencontrées :</div>
-                <ul>
-                    <?php foreach($ERREURS_IMPORT as $e): ?>
-                        <li class="code"><?php echo htmlspecialchars($e,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
-
-        <form method="get" style="margin-top:12px"><button class="btn" type="submit">Retour</button></form>
+        <h1>⚠ Échec de l'import</h1>
+        <div class="error-box">
+            <?php echo htmlspecialchars($message); ?>
+        </div>
+        <div style="margin-top:20px;">
+            <a href="sae_vt.php" class="btn">Réessayer</a>
+        </div>
     <?php endif; ?>
 </div>
+
 </body>
 </html>

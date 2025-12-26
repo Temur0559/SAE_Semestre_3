@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2025-11-27-010-1-full-rattrapage-data
+      author: Temur
+      comment: Insert toutes les données de test (Absences, Justificatifs, et Decisions ACCEPTATION) pour le rattrapage.
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              
+              ALTER SEQUENCE seance_id_seq RESTART WITH 10;
+              ALTER SEQUENCE absence_id_seq RESTART WITH 10;
+              ALTER SEQUENCE justificatif_id_seq RESTART WITH 8;
+              ALTER SEQUENCE historiquedecision_id_seq RESTART WITH 11;
+              
+              
+              ALTER SEQUENCE enseignement_id_seq RESTART WITH 200;
+
+              -- 1. SCENARIO TYPE=DS (Absence ID 8, Ressource R3.01) - Prof.Test
+              -- Crée la SEANCE
+              INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+              (8, CURRENT_DATE, '10:00', '2 hours', 'DS', 1, (SELECT id FROM Enseignement WHERE code = 'R3.01'), 'G1', 'B101', 'Test Prof', FALSE)
+              ON CONFLICT (id) DO NOTHING;
+              -- Crée l'ABSENCE (ID 8)
+              INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+              (8, 1, 8, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Test DS', 'Test Rattrapage DS')
+              ON CONFLICT (id) DO NOTHING;
+              -- Crée le JUSTIFICATIF (JID 6)
+              INSERT INTO Justificatif (id, fichier, commentaire, date_soumission, motif_libre, id_utilisateur, nom_fichier_original, type_mime) VALUES
+              (6, E'\x255044', 'Justif DS auto-soumis', NOW(), 'Maladie', 1, 'test_rattrapage_ds.pdf', 'application/pdf')
+              ON CONFLICT (id) DO NOTHING;
+              INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (6, 8) ON CONFLICT DO NOTHING;
+              -- Crée la DÉCISION ACCEPTATION (HD 9) (ID Auteur 3 = Responsable Pédagogique par défaut)
+              INSERT INTO HistoriqueDecision (id, action, date_action, motif_decision, id_justificatif, id_auteur) VALUES
+              (9, 'ACCEPTATION'::TypeDecision, NOW(), 'Accepté pour DS R3.01', 6, 3)
+              ON CONFLICT (id) DO NOTHING;
+
+              -- 2. SCENARIO CONTROLE=TRUE (Absence ID 9, Ressource R3.07) - Jean Valjean
+              -- Crée la SEANCE
+              INSERT INTO Seance (id, date, heure, duree, type, id_programme, id_enseignement, groupes, salles, profs, controle) VALUES
+              (9, CURRENT_DATE, '14:00', '1 hour', 'TD', 1, (SELECT id FROM Enseignement WHERE code = 'R3.07'), 'G2', 'C202', 'Valjean Jean', TRUE)
+              ON CONFLICT (id) DO NOTHING;
+              -- Crée l'ABSENCE (ID 9)
+              INSERT INTO Absence (id, id_utilisateur, id_seance, presence, justification, motif, commentaire) VALUES
+              (9, 1, 9, 'ABSENT'::PresenceEtat, 'JUSTIFIEE'::JustifEtat, 'Test Contrôle', 'Test Prof Filter')
+              ON CONFLICT (id) DO NOTHING;
+              -- Crée le JUSTIFICATIF (JID 7)
+              INSERT INTO Justificatif (id, fichier, commentaire, date_soumission, motif_libre, id_utilisateur, nom_fichier_original, type_mime) VALUES
+              (7, E'\x255044', 'Justif Contrôle auto-soumis', NOW(), 'Autre', 1, 'test_rattrapage_controle.pdf', 'application/pdf')
+              ON CONFLICT (id) DO NOTHING;
+              INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (7, 9) ON CONFLICT DO NOTHING;
+              -- Crée la DÉCISION ACCEPTATION (HD 10)
+              INSERT INTO HistoriqueDecision (id, action, date_action, motif_decision, id_justificatif, id_auteur) VALUES
+              (10, 'ACCEPTATION'::TypeDecision, NOW(), 'Accepté pour Contrôle R3.07', 7, 3)
+              ON CONFLICT (id) DO NOTHING;

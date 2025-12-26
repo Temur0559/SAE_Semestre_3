@@ -371,15 +371,7 @@ final class AbsenceModel
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    /**
-     * US6 - Log la décision du RP et met à jour le statut de l'absence liée.
-     * @param int $justifId L'ID du justificatif concerné.
-     * @param int $rpId L'ID de l'auteur (RP).
-     * @param string $action L'action ('ACCEPTATION', 'REJET', etc.)
-     * @param string $motif La raison de la décision.
-     * @return bool
-     * @throws \Exception
-     */
+
     public static function logRpDecision(int $justifId, int $rpId, string $action, string $motif): bool
     {
         $pdo = db();

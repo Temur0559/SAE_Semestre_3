@@ -4,40 +4,72 @@ require_once __DIR__ . '/../../connexion/config/db.php';
 
 final class RattrapageModel
 {
-
-    public static function getStudentsForRattrapage(): array
+    public static function getAssignedResources(int $profId): array
     {
+        $pdo = db();
+        $sql = "
+            SELECT code_ressource
+            FROM EnseignantRessource
+            WHERE id_enseignant = :id
+            ORDER BY code_ressource;
+        ";
+        $st = $pdo->prepare($sql);
+        $st->execute([':id' => $profId]);
+
+        return $st->fetchAll(\PDO::FETCH_COLUMN);
+    }
+
+
+    public static function getStudentsForRattrapage(int $profId, ?string $ressourceCode = null): array
+    {
+        $pdo = db();
+
+        $whereClause = "
+            AND e.code IN (
+                SELECT er.code_ressource 
+                FROM EnseignantRessource er 
+                WHERE er.id_enseignant = :profId
+            )
+        ";
+        $params = [':profId' => $profId];
+
+        if ($ressourceCode !== null && $ressourceCode !== '') {
+            $whereClause .= " AND e.code = :ressourceCode";
+            $params[':ressourceCode'] = $ressourceCode;
+        }
+
         $sql = "
             SELECT
-                s.date,
-                e.libelle AS enseignement,
+                e.code AS ressource_code,
+                e.libelle AS enseignement_libelle,
                 u.nom AS etudiant_nom,
                 u.prenom AS etudiant_prenom,
-                a.motif AS motif_absence,
-                (
-                    SELECT hd.motif_decision
-                    FROM JustificatifAbsence ja
-                    JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                    WHERE ja.id_absence = a.id AND hd.action = 'ACCEPTATION'
-                    ORDER BY hd.date_action DESC, hd.id DESC
-                    LIMIT 1
-                ) AS motif_justif_accepte
+                s.date AS date_absence,
+                'Excusée' AS statut_justif 
+                
             FROM Absence a
             JOIN Seance s ON s.id = a.id_seance
             JOIN Enseignement e ON e.id = s.id_enseignement
-            JOIN Utilisateur u ON u.id = a.id_utilisateur
-            -- On filtre sur une absence acceptée lors d'une évaluation
+            JOIN utilisateur u ON u.id = a.id_utilisateur
+            
+            --Uniquement les absences ACCEPTÉES
             WHERE a.presence = 'ABSENT'
-              AND s.controle = TRUE 
+              -- NOUVELLE CONDITION La justification a été officiellement acceptée
               AND EXISTS (
                   SELECT 1 FROM JustificatifAbsence ja
                   JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
                   WHERE ja.id_absence = a.id AND hd.action = 'ACCEPTATION'
               )
-            ORDER BY s.date DESC, enseignement, etudiant_nom
+              
+              -- Condition d'évaluation: Contrôle = TRUE OU Type = DS
+              AND (s.controle = TRUE OR s.type = 'DS')
+              
+              {$whereClause}
+              
+            ORDER BY s.date DESC, ressource_code, etudiant_nom
         ";
-        $st = db()->prepare($sql);
-        $st->execute();
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
 
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }

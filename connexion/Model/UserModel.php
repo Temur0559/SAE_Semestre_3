@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/db.php';
 
 final class UserModel {
 
-    /** @return array|null */
+
     public static function findByEmail(string $email) {
 
         $sql = "SELECT
@@ -21,9 +21,7 @@ final class UserModel {
         return $u ?: null;
     }
 
-    /** * @return array|null
-     * CORRECTION US1: Implémentation finale sécurisée avec password_verify().
-     */
+
     public static function authenticate(string $email, string $password) {
         $user = self::findByEmail($email);
         if (!$user) return null;

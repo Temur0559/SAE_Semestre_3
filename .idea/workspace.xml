@@ -4,24 +4,34 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Ajout du hachage et correction de la soumission de justificatif">
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Correction de code par rapport a la bdd.">
+      <change afterPath="$PROJECT_DIR$/Statistiques/Model/StatistiquesModel.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Statistiques/View/statistiques_etudiant.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Statistiques/index.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-27-008-ajouter-profs-reels.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-27-009-ressources-et-attribution.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-27-010-rattrapage-test-data.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Notification/NotificationService.php" beforeDir="false" afterPath="$PROJECT_DIR$/Notification/NotificationService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/changelog/2025-11-24-007-scenarios-test.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base_de_donnee/changelog/changelog-master.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/changelog/changelog-master.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/base_de_donnee/liquibase.properties" beforeDir="false" afterPath="$PROJECT_DIR$/base_de_donnee/liquibase.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Model/ActionModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Model/ActionModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Model/FichierJustificatifModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Model/FichierJustificatifModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Model/HistoriqueModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Model/HistoriqueModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Model/JustificatifInfos.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Model/JustificatifInfos.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/DeverouillerPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/DeverouillerPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/FichierJustificatifPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/FichierJustificatifPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/HistoriquePresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/HistoriquePresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/IndexPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/IndexPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/JustificatifDetailPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/JustificatifDetailPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/PrecisionsPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/PrecisionsPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/RejetPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/RejetPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/RevenirDecisionPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/RevenirDecisionPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/TraiterActionPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/TraiterActionPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/VerouillerPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/VerouillerPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/Model/UserModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/Model/UserModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_enseignant.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_enseignant.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_etudiant.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_responsable.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_responsable.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/View/dashboard_secretaire.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connexion/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/connexion/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/equipe_pedag/View/HistoriqueView.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/View/HistoriqueView.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/equipe_pedag/View/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/View/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/View/liste.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notifications/index.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/rattrapages/Model/RattrapageModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/rattrapages/Model/RattrapageModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rattrapages/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/rattrapages/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/soum_justif/JustificationModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/soum_justif/JustificationModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/soum_justif/justification.php" beforeDir="false" afterPath="$PROJECT_DIR$/soum_justif/justification.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vt/sae_vt.php" beforeDir="false" afterPath="$PROJECT_DIR$/vt/sae_vt.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,6 +92,7 @@
     &quot;JavaScript Debug.index.php.executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;PHP Script.UserModel.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHP Script.dashboard_enseignant.php.executor&quot;: &quot;Run&quot;,
     &quot;PHP Script.diag_find.php.executor&quot;: &quot;Run&quot;,
     &quot;PHP Script.index.php.executor&quot;: &quot;Run&quot;,
     &quot;PHP Script.temp.php.executor&quot;: &quot;Run&quot;,
@@ -154,7 +165,30 @@
       <workItem from="1763974806626" duration="677000" />
       <workItem from="1763975645093" duration="2391000" />
       <workItem from="1764065419436" duration="4130000" />
-      <workItem from="1764149170579" duration="1343000" />
+      <workItem from="1764149170579" duration="2689000" />
+      <workItem from="1764169460093" duration="410000" />
+      <workItem from="1764190680151" duration="3228000" />
+      <workItem from="1764228847036" duration="177000" />
+      <workItem from="1764229428597" duration="1820000" />
+      <workItem from="1764267666283" duration="5312000" />
+      <workItem from="1764273032516" duration="390000" />
+      <workItem from="1764273436186" duration="199000" />
+      <workItem from="1764273646103" duration="15000" />
+      <workItem from="1764273672012" duration="53000" />
+      <workItem from="1764273738581" duration="166000" />
+      <workItem from="1764273916024" duration="113000" />
+      <workItem from="1764274039544" duration="111000" />
+      <workItem from="1764274163669" duration="242000" />
+      <workItem from="1764274423428" duration="5402000" />
+      <workItem from="1764280150331" duration="4578000" />
+      <workItem from="1764314667971" duration="2673000" />
+      <workItem from="1764317380455" duration="190000" />
+      <workItem from="1764317590714" duration="3121000" />
+      <workItem from="1765358173877" duration="615000" />
+      <workItem from="1765378947567" duration="1834000" />
+      <workItem from="1765406366189" duration="1463000" />
+      <workItem from="1765437726439" duration="2848000" />
+      <workItem from="1766748406080" duration="18305000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -228,7 +262,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764149368955</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Correction de code par rapport a la bdd.">
+      <option name="closed" value="true" />
+      <created>1764150796641</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1764150796641</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -241,6 +283,7 @@
     <MESSAGE value="test" />
     <MESSAGE value="Mise à jour de la bdd pour les test de la us8 et 7" />
     <MESSAGE value="Ajout du hachage et correction de la soumission de justificatif" />
-    <option name="LAST_COMMIT_MESSAGE" value="Ajout du hachage et correction de la soumission de justificatif" />
+    <MESSAGE value="Correction de code par rapport a la bdd." />
+    <option name="LAST_COMMIT_MESSAGE" value="Correction de code par rapport a la bdd." />
   </component>
 </project>

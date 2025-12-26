@@ -1,7 +1,9 @@
 databaseChangeLog:
   - changeSet:
-      id: temur-20251124-007-scenarios
+
+      id: temur-20251124-007-scenarios-V9001
       author: temur
+      runOnChange: true
       changes:
         - sql:
             splitStatements: true
@@ -67,7 +69,8 @@ databaseChangeLog:
               
               
               -- Réinitialisation des séquences
-              ALTER SEQUENCE utilisateur_id_seq RESTART WITH 6; 
+              -- CORRECTION : RESTART WITH 7 car l'ID max actuel est 5 (ID 6 est créé dans la 008)
+              ALTER SEQUENCE utilisateur_id_seq RESTART WITH 7; 
               ALTER SEQUENCE seance_id_seq RESTART WITH 8;
               ALTER SEQUENCE absence_id_seq RESTART WITH 8;
               ALTER SEQUENCE justificatif_id_seq RESTART WITH 6;
