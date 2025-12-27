@@ -22,7 +22,7 @@ function db(): PDO {
     $user = $_ENV['DB_USER'] ?? throw new \RuntimeException('DB_USER manquant dans .env');
     $pass = $_ENV['DB_PASSWORD'] ?? throw new \RuntimeException('DB_PASSWORD manquant dans .env');
 
-    $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=require;options='endpoint=ep-sweet-butterfly-agv0uvto'";
+    $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=require";
 
     try {
         $pdo = new PDO($dsn, $user, $pass, [

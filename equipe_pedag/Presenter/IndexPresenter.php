@@ -60,7 +60,7 @@ class IndexPresenter {
         }
 
         // CORRECTION DE LA LIGNE 63 : Changement de 'IndexView.php' à 'index.php'
-        require __DIR__ . '/../View/index.php';
+        require_once __DIR__ . '/../View/index.php';
         $view = new IndexView();
         $view->render($justificatifsFiltres, $compteurs, $ongletActif, $selected);
     }

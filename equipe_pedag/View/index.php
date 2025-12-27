@@ -18,25 +18,29 @@ class IndexView {
         if (!function_exists('propre')) {
             function propre($s){ return htmlspecialchars((string)($s ?? ''), ENT_QUOTES, 'UTF-8'); }
         }
-
-        function couleur(string $k): string {
-            return match($k){
-                'accepte'     => 'status-valide',
-                'rejete'      => 'status-rejete',
-                'en_attente'  => 'status-attente',
-                'en_revision' => 'status-revision',
-                default       => '',
-            };
+        if (!function_exists('couleur')) {
+            function couleur(string $k): string
+            {
+                return match ($k) {
+                    'accepte' => 'status-valide',
+                    'rejete' => 'status-rejete',
+                    'en_attente' => 'status-attente',
+                    'en_revision' => 'status-revision',
+                    default => '',
+                };
+            }
+        }
+        if (!function_exists('statut_label')){
+            function statut_label(string $k): string {
+                return match($k){
+                    'accepte'     => 'Accepté',
+                    'rejete'      => 'Rejeté',
+                    'en_attente'  => 'En attente',
+                    'en_revision' => 'En révision',
+                    default       => '—',
+                };
         }
 
-        function statut_label(string $k): string {
-            return match($k){
-                'accepte'     => 'Accepté',
-                'rejete'      => 'Rejeté',
-                'en_attente'  => 'En attente',
-                'en_revision' => 'En révision',
-                default       => '—',
-            };
         }
 
         $etu_nom   = $selected['etu_nom']         ?? '';
