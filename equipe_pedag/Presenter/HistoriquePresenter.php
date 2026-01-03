@@ -21,7 +21,7 @@ class HistoriquePresenter {
         $typeAction   = $_GET['action'] ?? 'toutes';
         $dateMin      = $_GET['from'] ?? '';
         $dateMax      = $_GET['to'] ?? '';
-        $pageActuelle = max(1, (int)($_GET['page'] ?? 1));
+        $pageActuelle = max(1, (int)($_GET['p'] ?? 1));
 
         // pagination
         $parPage = 20;
