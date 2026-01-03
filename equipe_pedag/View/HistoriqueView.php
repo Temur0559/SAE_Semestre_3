@@ -235,18 +235,23 @@ class HistoriqueView {
                             <?=$this->fr_date($r['date_action'])?> <span style="color:#888;">à <?=$this->fr_hm($r['date_action'])?></span>
                         </td>
                         <td><strong><?=$this->propre(($r['etu_prenom']??'').' '.($r['etu_nom']??''))?></strong></td>
-                        <td><?=$this->fr_date($r['cours_date'] ?? null)?></td>
+                        <td>
+                            <?php if (!empty($r['date_debut_demande']) && !empty($r['date_fin_demande'])): ?>
+                                du <?=$this->fr_date($r['date_debut_demande'])?> au <?=$this->fr_date($r['date_fin_demande'])?> <?php else: ?> <?=$this->fr_date($r['date_seance'] ?? null)?>
+                            <?php endif; ?>
+                        </td>
+
                         <td>
                             <details>
                                 <summary style="cursor:pointer; list-style:none;"><?= $this->action_badge($r['action']) ?> <small>(cliquer pour détails)</small></summary>
                                 <div class="action-details">
-                                    <?php if (!empty($r['cours_date'])): ?>
-                                        <p style="font-size: 0.85rem;"><strong>Période :</strong> du <?=$this->fr_date($r['cours_date'])?> à <?=$this->fr_hm($r['cours_heure'])?></p>
-                                    <?php endif; ?>
-
-                                    <?php if(!empty($r['motif_decision'])): ?>
-                                        <p style="font-size: 0.85rem; color:#555;"><strong>Motif :</strong> <?=nl2br($this->propre($r['motif_decision']))?></p>
-                                    <?php endif; ?>
+                                    <p style="margin-top:10px;">
+                                        <a
+                                                href="index.php?page=justificatif_detail&id=<?=$r['justif_id']?>"
+                                                style="text-decoration:none; font-weight:bold; color:var(--uphf-blue-light);"
+                                        > Voir les actions antécedentes
+                                        </a>
+                                    </p>
 
                                     <div class="row-actions">
                                         <form method="post" action="index.php?page=revenir_decision" style="display:flex; gap:10px; width:100%;">
@@ -269,10 +274,10 @@ class HistoriqueView {
             <div class="pager">
                 <span style="margin-right: 20px;">Page <?=$page?> / <?=$pages?></span>
                 <?php if($page > 1): ?>
-                    <a href="?page=historique&pageNumber=<?=$page-1?>&q=<?=$q?>&action=<?=$action?>&from=<?=$from?>&to=<?=$to?>">‹ Précedent</a>
+                    <a href="?page=historique&=<?=$page-1?>&q=<?=$q?>&action=<?=$action?>&from=<?=$from?>&to=<?=$to?>">‹ Précedent</a>
                 <?php endif; ?>
                 <?php if($page < $pages): ?>
-                    <a href="?page=historique&pageNumber=<?=$page+1?>&q=<?=$q?>&action=<?=$action?>&from=<?=$from?>&to=<?=$to?>">Suivant ›</a>
+                    <a href="?page=historique&p=<?=$page+1?>&q=<?=$q?>&action=<?=$action?>&from=<?=$from?>&to=<?=$to?>">Suivant ›</a>
                 <?php endif; ?>
             </div>
         </main>

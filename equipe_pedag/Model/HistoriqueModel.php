@@ -55,13 +55,7 @@ class HistoriqueModel {
 
         list($where, $params) = $this->construireFiltres($filtrerTexte, $filtrerDecision, $filtrerDate1, $filtrerDate2);
 
-        $sql = " SELECT COUNT(*) FROM HistoriqueDecision
-        JOIN Justificatif ON Justificatif.id = HistoriqueDecision.id_justificatif
-        JOIN Utilisateur ON Utilisateur.id = Justificatif.id_utilisateur
-        LEFT JOIN JustificatifAbsence ON JustificatifAbsence.id_justificatif = Justificatif.id
-        LEFT JOIN Absence ON Absence.id = JustificatifAbsence.id_absence
-        LEFT JOIN Seance ON Seance.id = Absence.id_seance
-        $where";
+        $sql = "SELECT COUNT(*) FROM HistoriqueDecision JOIN Justificatif ON Justificatif.id = HistoriqueDecision.id_Justificatif JOIN Utilisateur ON Utilisateur.id = Justificatif.id_Utilisateur $where";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -76,35 +70,21 @@ class HistoriqueModel {
 
         list($where, $params) = $this->construireFiltres($filtrerTexte, $filtrerDecision, $filtrerDate1, $filtrerDate2);
 
-        $sql = "
-            SELECT
-                HistoriqueDecision.id,
-                HistoriqueDecision.date_action,
-                HistoriqueDecision.action,
-                HistoriqueDecision.motif_decision,
+        $sql = " SELECT hd.id, hd.date_action, hd.action, hd.motif_decision, j.id AS justif_id, j.nom_fichier_original,j.date_soumission, j.date_debut_demande, j.date_fin_demande, u.id AS etu_id,u.prenom AS etu_prenom,u.nom AS etu_nom,s.date AS date_seance, s.heure AS cours_heure
+ FROM (
+ SELECT hd.id, hd.id_justificatif, hd.action, hd.date_action, hd.motif_decision
+ FROM HistoriqueDecision hd
+INNER JOIN ( 
+SELECT id_justificatif, MAX(date_action) AS max_date FROM HistoriqueDecision GROUP BY id_justificatif ) last_decision ON last_decision.id_justificatif = hd.id_justificatif AND last_decision.max_date = hd.date_action) hd
+JOIN Justificatif j ON j.id = hd.id_justificatif
+JOIN Utilisateur u ON u.id = j.id_utilisateur
+LEFT JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
+LEFT JOIN Absence a ON a.id = ja.id_absence
+LEFT JOIN Seance s ON s.id = a.id_seance
 
-                Justificatif.id AS justif_id,
-                Justificatif.nom_fichier_original,
-                Justificatif.date_soumission,
-
-                Utilisateur.id AS etu_id,
-                Utilisateur.prenom AS etu_prenom,
-                Utilisateur.nom AS etu_nom,
-
-                Seance.date AS date_seance
-
-            FROM HistoriqueDecision
-            JOIN Justificatif ON Justificatif.id = HistoriqueDecision.id_justificatif
-            JOIN Utilisateur ON Utilisateur.id = Justificatif.id_utilisateur
-            LEFT JOIN JustificatifAbsence ON JustificatifAbsence.id_justificatif = Justificatif.id
-            LEFT JOIN Absence ON Absence.id = JustificatifAbsence.id_absence
-            LEFT JOIN Seance ON Seance.id = Absence.id_seance
-
-            $where
-            ORDER BY HistoriqueDecision.date_action DESC
-            LIMIT :lim OFFSET :off
-        ";
-
+$where
+ORDER BY hd.date_action DESC
+LIMIT :lim OFFSET :off";
         $stmt = $this->pdo->prepare($sql);
 
         // Pagination

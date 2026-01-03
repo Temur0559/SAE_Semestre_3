@@ -1,17 +1,20 @@
 <?php
 
 require_once __DIR__ . '/../model/JustificatifInfosModel.php';
+require_once __DIR__ . '/../model/detailHistoriqueModel.php';
+
+
 
 class JustificatifDetailPresenter {
 
     private PDO $pdo;
     private JustificatifInfosModel $model;
+    private detailHistoriqueModel $detailHistoriqueModel;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
-
+        $this->pdo = db();
         $this->model = new JustificatifInfosModel($this->pdo);
+        $this->detailHistoriqueModel = new detailHistoriqueModel($this->pdo);
     }
 
     public function handle() {
@@ -31,9 +34,13 @@ class JustificatifDetailPresenter {
             die("Justificatif introuvable.");
         }
 
+        $historiquedetail = $this->detailHistoriqueModel->detailParJustificatif($id);
+
         // affiche la vue
         require __DIR__ . '/../view/JustificatifDetailView.php';
         $vue = new JustificatifDetailView();
-        $vue->render($justif);
+        $vue->render($justif, $historiquedetail);
+
+
     }
 }
