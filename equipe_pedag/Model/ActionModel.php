@@ -1,22 +1,25 @@
 <?php
 
-class ActionModel {
+class ActionModel
+{
 
     private PDO $pdo;
 
-    public function __construct(PDO $pdo) {
+    public function __construct(PDO $pdo)
+    {
         $this->pdo = $pdo;
     }
 
 
-    public function ajouter_decision(int $justifId, string $action, ?string $motif, int $auteur) {
+    public function ajouter_decision(int $justifId, string $action, ?string $motif, int $auteur)
+    {
 
         $sql = "INSERT INTO HistoriqueDecision (action, motif_decision, id_justificatif, id_auteur) VALUES (:action, :motif, :justif, :auteur)";
 
         $st = $this->pdo->prepare($sql);
         $st->execute([
             ':action' => $action,
-            ':motif'  => ($motif !== '' ? $motif : null),
+            ':motif' => ($motif !== '' ? $motif : null),
             ':justif' => $justifId,
             ':auteur' => $auteur
         ]);
@@ -25,7 +28,8 @@ class ActionModel {
 
     // pour deverouille un justificatif 
 
-    public function deverouille(int $id) {
+    public function deverouille(int $id)
+    {
 
         $sql = "UPDATE Justificatif SET verouille = FALSE, verouille_date = NULL, date_maj = NOW() WHERE id = :id"; // CORRIGÉ
         $st = $this->pdo->prepare($sql);
@@ -35,7 +39,8 @@ class ActionModel {
 
     // pour verrouiller un justificatif (Ajouté)
 
-    public function verrouiller(int $id) {
+    public function verrouiller(int $id)
+    {
 
         $sql = "UPDATE Justificatif SET verouille = TRUE, verouille_date = NOW(), date_maj = NOW() WHERE id = :id"; // CORRIGÉ
         $st = $this->pdo->prepare($sql);
@@ -44,7 +49,8 @@ class ActionModel {
 
 
     // marque une absence justifiée quand on l'accepte dans la bdd (Renommée en marquer_absence_justifiee)
-    public function marquer_absence_justifiee(int $justifId) { // RENOMMÉ
+    public function marquer_absence_justifiee(int $justifId)
+    { // RENOMMÉ
 
         $sql = "SELECT JustificatifAbsence.id_absence FROM JustificatifAbsence WHERE JustificatifAbsence.id_justificatif = :id";
 
@@ -62,4 +68,5 @@ class ActionModel {
         $st2 = $this->pdo->prepare($sql2);
         $st2->execute([':id' => $abs['id_absence']]);
     }
+
 }

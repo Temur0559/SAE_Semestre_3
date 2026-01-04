@@ -8,8 +8,7 @@ class VerouillerPresenter { // CORRIGÉ
     private ActionModel $actionModel;
 
     public function __construct() {
-        require __DIR__ . '/../config/db.php';
-        $this->pdo = $pdo;
+        $this->pdo = db();
 
         $this->actionModel = new ActionModel($this->pdo);
     }

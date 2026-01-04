@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 require_once __DIR__ . '/../connexion/config/session.php';
 require_once __DIR__ . '/../connexion/config/db.php';
@@ -26,10 +25,9 @@ switch ($page) {
         $presenter = new IndexPresenter($pdo);
         break;
 
-    case 'justificatif_detail':
-        echo "Justificatif";
+    case 'justificatif_detail';
         require __DIR__ . '/Presenter/JustificatifDetailPresenter.php';
-        $presenter = new JustificatifDetailPresenter($pdo);
+        $presenter = new JustificatifDetailPresenter();
         break;
 
     case 'historique':

@@ -26,7 +26,33 @@ class TraiterActionPresenter {
         // données envoyées
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $actionDemandee = $_POST['action'] ?? '';
-        $motif          = trim($_POST['motifDecision'] ?? ''); // Correction pour utiliser 'motifDecision' comme dans index.php
+        $redirect = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
+        // Gestion du motif selon l'action
+        $motif = null;
+
+        if ($actionDemandee === 'ACCEPTATION') {
+            $motifPredefini = trim($_POST['motif_predefini'] ?? '');
+            $commentaireAcc = trim($_POST['commentaire_acceptation'] ??'');
+            $ajouterMotifAcceptation = isset($_POST['ajouter_motif_acceptation']);
+
+            if ($motifPredefini === '') {
+                header('Location: '.$redirect);
+                exit;
+            }
+
+            // Composition du motif métier
+            $motif = $motifPredefini;
+
+            if ($commentaireAcc !== '') {
+                $motif .= ' — ' . $commentaireAcc;
+            }
+
+        } else {
+            // Comportement inchangé pour rejet / précisions / autres
+            $motif = trim($_POST['motifDecision'] ?? '');
+            $motif = ($motif !== '' ? $motif : null);
+        }
+
         $idAuteur       = 3; // responsable connecté
         $redirect       = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
 
@@ -38,6 +64,8 @@ class TraiterActionPresenter {
             header('Location: '.$redirect);
             exit;
         }
+
+
 
 
         $this->actionModel->ajouter_decision(
