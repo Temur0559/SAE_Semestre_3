@@ -13,13 +13,11 @@ $page = $_GET['page'] ?? 'index';
 switch ($page) {
 
     case 'index':
-        echo "INDEX";
         require_once __DIR__ . '/Presenter/IndexPresenter.php';
         $presenter = new IndexPresenter($pdo);
         break;
 
     case 'detail':
-        echo "DETAIL";
         // Remplacement par IndexPresenter par défaut si DetailPresenter n'est pas fourni.
         require_once __DIR__ . '/Presenter/IndexPresenter.php';
         $presenter = new IndexPresenter($pdo);
@@ -31,13 +29,11 @@ switch ($page) {
         break;
 
     case 'historique':
-        echo "Historique";
         require __DIR__ . '/Presenter/HistoriquePresenter.php';
         $presenter = new HistoriquePresenter($pdo);
         break;
 
     case 'fichier_justificatif':
-        echo "Fichier Justificatif";
         require __DIR__ . '/Presenter/FichierJustificatifPresenter.php';
         $presenter = new FichierJustificatifPresenter($pdo);
         break;
