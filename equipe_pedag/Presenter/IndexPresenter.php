@@ -18,9 +18,6 @@ class IndexPresenter {
     public function handle() {
 
         // session_start() a été déplacé dans index.php
-
-
-
         // recup toutes les absences + dernier justificatif + dernière décision
         $rowsAll = $this->model->AbsencesDetails();
         $filtreNom    = trim($_GET['nom'] ?? '');

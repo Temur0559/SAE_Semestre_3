@@ -237,7 +237,7 @@ class IndexView {
                     <thead>
                     <tr>
                         <th>Étudiant</th>
-                        <th>Date de l'absence</th>
+                        <th>Période d'absence déclarée</th>
                         <th>Statut</th>
                     </tr>
                     </thead>
@@ -260,26 +260,17 @@ class IndexView {
                 <?php if($selected): ?>
                     <div class="detail-pane">
                         <h3>Détails du justificatif</h3>
+                        <p style="color:#888; font-size:0.9em;">
+                            <strong>ID justificatif :</strong> <?= $selected['id'] ?>
+                            —
+                            <strong>ID absence :</strong> <?= $selected['absence_id'] ?>
+                        </p>
+
                         <div style="margin 15px 0; padding: 10px; background: #eef6ff; border-left:4px solid #007bff;">
                             <strong>Période d'absence déclarée par l'étudiant : </strong><br>
                             Du <?= fr_date($selected['date_debut_demande']) ?>
                             au <?= fr_date($selected['date_fin_demande']) ?>
                         </div>
-                        <?php if ($selected['verouille']): ?>
-                            <div style="margin:15px 0; padding:10px; background:#f8d7da; border-left:4px solid #dc3545;">
-                                 <strong>Justificatif verrouillé</strong>
-                            </div>
-
-                            <form method="post" action="index.php?page=deverouiller">
-                                <input type="hidden" name="id" value="<?= $selected['id'] ?>">
-                                <button class="btn neutral">Déverrouiller</button>
-                            </form>
-                        <?php else: ?>
-                            <form method="post" action="index.php?page=verouiller">
-                                <input type="hidden" name="id" value="<?= $selected['id'] ?>">
-                                <button class="btn danger">Verrouiller</button>
-                            </form>
-                        <?php endif; ?>
                         <?php if (($selected['action'] ?? '') === 'DEMANDE_PRECISIONS'): ?>
                             <div style="margin-top:20px; padding:10px; background:#eef6ff; border-left:4px solid #0c5460;">
                                 <strong>Demande de précisions envoyée à l’étudiant :</strong>
@@ -373,14 +364,22 @@ class IndexView {
                                 <label><strong>Motif du rejet</strong></label>
                                 <select name="motifDecision" class="inp" required>
                                     <option value="">Sélectionner un motif</option>
-                                    <option value="justificatif illisible">AUTRE</option>
-                                    <option value="justificatif illisible">Justificatif illisible</option>
-                                    <option value="motif non recevable">Motif non recevable</option>
+                                    <option value="AUTRE">AUTRE</option>
+                                    <option value="Justificatif illisible">Justificatif illisible</option>
+                                    <option value="Motif non recevable">Motif non recevable</option>
                                 </select>
+
+                                <textarea
+                                        name="commentaire_rejet"
+                                        class="inp textarea-fixed"
+                                        rows="2"
+                                        placeholder="Commentaire optionnel"
+                                ></textarea>
                                 <button class="btn danger" name="action" value="REJET">
-                                Rejetter
+                                    Rejeter
                                 </button>
                             </form>
+
 
                         </div>
                     </div>

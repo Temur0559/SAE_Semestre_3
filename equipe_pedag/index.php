@@ -50,19 +50,6 @@ switch ($page) {
         $presenter = new RejetPresenter($pdo);
         break;
 
-    case 'verouiller':
-        echo "Verouille";
-        // CORRIGÉ: Nom de fichier VerouillerPresenter
-        require __DIR__ . '/Presenter/VerouillerPresenter.php';
-        $presenter = new VerouillerPresenter($pdo);
-        break;
-
-    case 'deverouiller':
-        echo "Deverouille";
-        // CORRIGÉ: Nom de fichier DeverouillerPresenter
-        require __DIR__ . '/Presenter/DeverouillerPresenter.php';
-        $presenter = new DeverouillerPresenter($pdo);
-        break;
 
     case 'precisions':
         echo "Precisions";

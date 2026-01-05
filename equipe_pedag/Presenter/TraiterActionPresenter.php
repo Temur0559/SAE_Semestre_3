@@ -33,7 +33,7 @@ class TraiterActionPresenter {
         if ($actionDemandee === 'ACCEPTATION') {
             $motifPredefini = trim($_POST['motif_predefini'] ?? '');
             $commentaireAcc = trim($_POST['commentaire_acceptation'] ??'');
-            $ajouterMotifAcceptation = isset($_POST['ajouter_motif_acceptation']);
+
 
             if ($motifPredefini === '') {
                 header('Location: '.$redirect);
@@ -67,33 +67,29 @@ class TraiterActionPresenter {
 
 
 
-
         $this->actionModel->ajouter_decision(
             $idJustificatif,
             $actionDemandee,
             ($motif !== '' ? $motif : null),
             $idAuteur);
+        if ($actionDemandee == 'ACCEPTATION' || $actionDemandee == 'REJET') {
+            $this->actionModel->verrouiller($idJustificatif);
 
-
-        if (
-            $actionDemandee === 'DEMANDE_PRECISIONS' ||
-            $actionDemandee === 'AUTORISATION_RENVOI' ||
-            $actionDemandee === 'AUTORISATION_HORS_DELAI'
-        ) {
+        }
+        if (in_array($actionDemandee, ['DEMANDE_PRECISIONS', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI'], true)){
             $this->actionModel->deverouille($idJustificatif);
         }
+
 
         if ($actionDemandee === 'ACCEPTATION') {
             $this->actionModel->marquer_absence_justifiee($idJustificatif); // CORRIGÉ: Ancien nom était marquer_comme_justifiee
         }
 
-        // Si l'action est REJET, le Presenter RejetPresenter est censé être appelé, mais par sécurité on pourrait ajouter le verrouillage ici, bien que l'action TraiterActionPresenter soit utilisée uniquement pour l'ACCEPTATION dans la vue IndexView fournie.
-        if ($actionDemandee === 'REJET') {
-            $this->actionModel->verrouiller($idJustificatif);
-        }
 
         // redirection
         header('Location: ' . $redirect);
         exit;
     }
+
+
 }
