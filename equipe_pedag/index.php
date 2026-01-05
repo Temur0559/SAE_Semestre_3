@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 require_once __DIR__ . '/../connexion/config/session.php';
 require_once __DIR__ . '/../connexion/config/db.php';
@@ -14,32 +13,27 @@ $page = $_GET['page'] ?? 'index';
 switch ($page) {
 
     case 'index':
-        echo "INDEX";
         require_once __DIR__ . '/Presenter/IndexPresenter.php';
         $presenter = new IndexPresenter($pdo);
         break;
 
     case 'detail':
-        echo "DETAIL";
         // Remplacement par IndexPresenter par défaut si DetailPresenter n'est pas fourni.
         require_once __DIR__ . '/Presenter/IndexPresenter.php';
         $presenter = new IndexPresenter($pdo);
         break;
 
-    case 'justificatif_detail':
-        echo "Justificatif";
+    case 'justificatif_detail';
         require __DIR__ . '/Presenter/JustificatifDetailPresenter.php';
-        $presenter = new JustificatifDetailPresenter($pdo);
+        $presenter = new JustificatifDetailPresenter();
         break;
 
     case 'historique':
-        echo "Historique";
         require __DIR__ . '/Presenter/HistoriquePresenter.php';
         $presenter = new HistoriquePresenter($pdo);
         break;
 
     case 'fichier_justificatif':
-        echo "Fichier Justificatif";
         require __DIR__ . '/Presenter/FichierJustificatifPresenter.php';
         $presenter = new FichierJustificatifPresenter($pdo);
         break;
@@ -56,19 +50,6 @@ switch ($page) {
         $presenter = new RejetPresenter($pdo);
         break;
 
-    case 'verouiller':
-        echo "Verouille";
-        // CORRIGÉ: Nom de fichier VerouillerPresenter
-        require __DIR__ . '/Presenter/VerouillerPresenter.php';
-        $presenter = new VerouillerPresenter($pdo);
-        break;
-
-    case 'deverouiller':
-        echo "Deverouille";
-        // CORRIGÉ: Nom de fichier DeverouillerPresenter
-        require __DIR__ . '/Presenter/DeverouillerPresenter.php';
-        $presenter = new DeverouillerPresenter($pdo);
-        break;
 
     case 'precisions':
         echo "Precisions";

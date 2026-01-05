@@ -7,46 +7,54 @@ class TraiterActionPresenter {
     private PDO $pdo;
     private ActionModel $actionModel;
 
-    public function __construct(PDO $pdo) {
-        $this->pdo = $pdo;
+    public function __construct() {
+        $this->pdo = db();
+
         $this->actionModel = new ActionModel($this->pdo);
     }
 
     public function handle() {
+
+        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: historique.php');
             exit;
         }
 
+
         // données envoyées
         $idJustificatif = (int)($_POST['id'] ?? 0);
-        $absenceId = (int)($_POST['absence_id'] ?? 0);
         $actionDemandee = $_POST['action'] ?? '';
-        $motif          = trim($_POST['motifDecision'] ?? '');
-        $idAuteur       = 3; // responsable connecté
-        $redirect       = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
+        $redirect = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
+        // Gestion du motif selon l'action
+        $motif = null;
 
-        // TRAITEMENT SPÉCIAL POUR PASSER_EN_REVISION_SPECIAL
-        if ($actionDemandee === 'PASSER_EN_REVISION_SPECIAL') {
-            if ($idJustificatif > 0) {
-                // Déverrouiller le justificatif pour permettre à l'étudiant de renvoyer
-                $this->actionModel->deverouille($idJustificatif);
+        if ($actionDemandee === 'ACCEPTATION') {
+            $motifPredefini = trim($_POST['motif_predefini'] ?? '');
+            $commentaireAcc = trim($_POST['commentaire_acceptation'] ??'');
 
-                // Enregistrer l'action DEMANDE_PRECISIONS dans l'historique
-                // Cela fera automatiquement apparaître l'absence dans l'onglet "En révision"
-                $this->actionModel->ajouter_decision(
-                    $idJustificatif,
-                    'DEMANDE_PRECISIONS',
-                    ($motif !== '' ? $motif : 'Demande de révision du justificatif'),
-                    $idAuteur
-                );
+
+            if ($motifPredefini === '') {
+                header('Location: '.$redirect);
+                exit;
             }
-            header('Location: ' . $redirect);
-            exit;
+
+            // Composition du motif métier
+            $motif = $motifPredefini;
+
+            if ($commentaireAcc !== '') {
+                $motif .= ' — ' . $commentaireAcc;
+            }
+
+        } else {
+            // Comportement inchangé pour rejet / précisions / autres
+            $motif = trim($_POST['motifDecision'] ?? '');
+            $motif = ($motif !== '' ? $motif : null);
         }
 
-        // TRAITEMENT NORMAL POUR LES AUTRES ACTIONS
+        $idAuteur       = 3; // responsable connecté
+        $redirect       = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
 
         // liste des actions autorisées
         $actionsAutorisees = [
@@ -57,31 +65,31 @@ class TraiterActionPresenter {
             exit;
         }
 
+
+
         $this->actionModel->ajouter_decision(
             $idJustificatif,
             $actionDemandee,
             ($motif !== '' ? $motif : null),
-            $idAuteur
-        );
+            $idAuteur);
+        if ($actionDemandee == 'ACCEPTATION' || $actionDemandee == 'REJET') {
+            $this->actionModel->verrouiller($idJustificatif);
 
-        if (
-            $actionDemandee === 'DEMANDE_PRECISIONS' ||
-            $actionDemandee === 'AUTORISATION_RENVOI' ||
-            $actionDemandee === 'AUTORISATION_HORS_DELAI'
-        ) {
+        }
+        if (in_array($actionDemandee, ['DEMANDE_PRECISIONS', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI'], true)){
             $this->actionModel->deverouille($idJustificatif);
         }
 
+
         if ($actionDemandee === 'ACCEPTATION') {
-            $this->actionModel->marquer_absence_justifiee($idJustificatif);
+            $this->actionModel->marquer_absence_justifiee($idJustificatif); // CORRIGÉ: Ancien nom était marquer_comme_justifiee
         }
 
-        if ($actionDemandee === 'REJET') {
-            $this->actionModel->verrouiller($idJustificatif);
-        }
 
         // redirection
         header('Location: ' . $redirect);
         exit;
     }
+
+
 }

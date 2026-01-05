@@ -2,7 +2,7 @@
 
 class IndexView {
 
-    public function render(array $justificatifs, array $compteurs, string $ongletActif, ?array $selected) {
+    public function render(array $justificatifs, array $compteurs, string $ongletActif, ?array $selected, array $details) {
 
         // On récupère le chemin de base pour les ressources (CSS/Images)
         require_once __DIR__ . '/../../connexion/config/base_path.php';
@@ -167,7 +167,6 @@ class IndexView {
                 .btn { width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: bold; color: white; }
                 .primary { background: var(--uphf-blue-light); }
                 .danger { background: var(--danger-color); }
-                .warning { background: #ffc107; color: #000; }
                 .neutral { background: #6c757d; }
             </style>
         </head>
@@ -195,10 +194,24 @@ class IndexView {
         <div class="main-container">
             <aside class="pane">
                 <div class="pane-title">Informations étudiant</div>
-                <label class="field"><span>Nom</span><input type="text" value="<?=propre($etu_nom)?>" readonly></label>
-                <label class="field"><span>Prénom</span><input type="text" value="<?=propre($etu_pre)?>" readonly></label>
-                <label class="field"><span>Identifiant</span><input type="text" value="<?=propre($etu_id)?>" readonly></label>
+
+                <form method="get">
+                    <input type="hidden" name="ongletActif" value="<?= $ongletActif ?>">
+
+                    <label class="field">
+                        <span>Nom</span>
+                        <input type="text" name="nom" value="<?= htmlspecialchars($_GET['nom'] ?? '') ?>">
+                    </label>
+
+                    <label class="field">
+                        <span>Prénom</span>
+                        <input type="text" name="prenom" value="<?= htmlspecialchars($_GET['prenom'] ?? '') ?>">
+                    </label>
+
+                    <button class="btn primary">Filtrer</button>
+                </form>
             </aside>
+
 
             <section class="pane" style="flex-grow: 1;">
                 <h1>Gestion des absences</h1>
@@ -224,7 +237,7 @@ class IndexView {
                     <thead>
                     <tr>
                         <th>Étudiant</th>
-                        <th>Date de l'absence</th>
+                        <th>Période d'absence déclarée</th>
                         <th>Statut</th>
                     </tr>
                     </thead>
@@ -247,37 +260,129 @@ class IndexView {
                 <?php if($selected): ?>
                     <div class="detail-pane">
                         <h3>Détails du justificatif</h3>
+                        <p style="color:#888; font-size:0.9em;">
+                            <strong>ID justificatif :</strong> <?= $selected['id'] ?>
+                            —
+                            <strong>ID absence :</strong> <?= $selected['absence_id'] ?>
+                        </p>
+
+                        <div style="margin 15px 0; padding: 10px; background: #eef6ff; border-left:4px solid #007bff;">
+                            <strong>Période d'absence déclarée par l'étudiant : </strong><br>
+                            Du <?= fr_date($selected['date_debut_demande']) ?>
+                            au <?= fr_date($selected['date_fin_demande']) ?>
+                        </div>
+                        <?php if (($selected['action'] ?? '') === 'DEMANDE_PRECISIONS'): ?>
+                            <div style="margin-top:20px; padding:10px; background:#eef6ff; border-left:4px solid #0c5460;">
+                                <strong>Demande de précisions envoyée à l’étudiant :</strong>
+                                <p style="margin-top:10px;">
+                                    <?= propre($selected['motif_decision'] ?? '') ?>
+                                </p>
+                            </div>
+
+                        <?php else: ?>
+                            <form method="post" action="index.php?page=precisions" style="margin-top:20px;">
+                                <input type="hidden" name="id" value="<?= $selected['id'] ?>">
+                                <label style="font-weight:bold; display:block; margin-bottom:5px;">
+                                    Demande de précisions à l’étudiant
+                                </label>
+                                <textarea
+                                        name="message"
+                                        rows="4"
+                                        placeholder="Commentaire"
+                                        style="width:100%; padding:8px; margin-bottom:10px;"
+                                        required
+                                ></textarea>
+
+                                <button class="btn neutral">
+                                    Demander des précisions
+                                </button>
+                            </form>
+                        <?php endif; ?>
+
+
+
+                        <?php if (!empty($details)): ?>
+                            <div style="margin-top:20px;">
+                                <h4>Cours concernés par le justificatif</h4>
+
+                                <table class="justif-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Heure</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($details as $d): ?>
+                                        <tr>
+                                            <td><?= fr_date($d['date']) ?></td>
+                                            <td><?= fr_heure($d['heure']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+
                         <p><strong>Étudiant :</strong> <?=propre($selected['etu_prenom'].' '.$selected['etu_nom'])?></p>
                         <p><strong>Absence :</strong> le <?=fr_date($selected['cours_date'])?> à <?=fr_heure($selected['cours_heure'])?></p>
 
                         <div style="margin: 20px 0;">
                             <a href="index.php?page=fichier_justificatif&id=<?=$selected['id']?>" target="_blank" style="color: var(--uphf-blue-light); font-weight: bold;">
-                                📄 Voir le document justificatif
+                                Voir le document justificatif
                             </a>
                         </div>
 
                         <div class="detail-actions">
                             <form method="post" action="index.php?page=traiter_action" class="stack">
-                                <input type="hidden" name="id" value="<?=$selected['id']?>">
-                                <input type="hidden" name="absence_id" value="<?=$selected['absence_id']?>">
-                                <input type="text" name="motifDecision" placeholder="Motif (optionnel)" class="inp">
-                                <button class="btn primary" name="action" value="ACCEPTATION">Accepter</button>
+                                <input type="hidden" name="id" value="<?= $selected['id'] ?>">
+
+                                <label><strong>Motif de l’acceptation</strong></label>
+                                <select name="motif_predefini" class="inp" required>
+                                    <option value=""> Sélectionner un motif</option>
+                                    <option value="Justificatif conforme">AUTRE</option>
+                                    <option value="Certificat médical valide">Certificat médical valide</option>
+                                    <option value="Convocation officielle">Convocation officielle</option>
+                                    <option value="Justificatif conforme">Justificatif conforme</option>
+                                    <option value="Raisons familiales">Force majeure</option>
+                                </select>
+                                <textarea
+                                        name="commentaire_acceptation"
+                                        class="inp"
+                                        rows="2"
+                                        placeholder="Commentaire optionnel"
+                                ></textarea>
+
+                                <button class="btn primary" name="action" value="ACCEPTATION">
+                                    Accepter
+                                </button>
                             </form>
 
-                            <form method="post" action="index.php?page=traiter_action" class="stack">
-                                <input type="hidden" name="id" value="<?=$selected['id']?>">
-                                <input type="hidden" name="absence_id" value="<?=$selected['absence_id']?>">
-                                <input type="text" name="motifDecision" placeholder="Raison" class="inp">
-                                <button class="btn warning" name="action" value="PASSER_EN_REVISION_SPECIAL">Passer en révision</button>
-                            </form>
 
                             <form method="post" action="index.php?page=rejet" class="stack">
-                                <input type="hidden" name="id" value="<?=$selected['id']?>">
-                                <input type="hidden" name="absence_id" value="<?=$selected['absence_id']?>">
-                                <input type="text" name="motifDecision" placeholder="Motif du rejet" class="inp" required>
-                                <button class="btn danger">Rejeter</button>
+                                <input type="hidden" name="id" value="<?= $selected['id'] ?>">
+                                <label><strong>Motif du rejet</strong></label>
+                                <select name="motifDecision" class="inp" required>
+                                    <option value="">Sélectionner un motif</option>
+                                    <option value="AUTRE">AUTRE</option>
+                                    <option value="Justificatif illisible">Justificatif illisible</option>
+                                    <option value="Motif non recevable">Motif non recevable</option>
+                                </select>
+
+                                <textarea
+                                        name="commentaire_rejet"
+                                        class="inp textarea-fixed"
+                                        rows="2"
+                                        placeholder="Commentaire optionnel"
+                                ></textarea>
+                                <button class="btn danger" name="action" value="REJET">
+                                    Rejeter
+                                </button>
                             </form>
+
+
                         </div>
+                    </div>
                 <?php endif; ?>
             </section>
         </div>

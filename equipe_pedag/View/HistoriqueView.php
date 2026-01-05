@@ -237,9 +237,18 @@ class HistoriqueView {
                         <td><strong><?=$this->propre(($r['etu_prenom']??'').' '.($r['etu_nom']??''))?></strong></td>
                         <td>
                             <?php if (!empty($r['date_debut_demande']) && !empty($r['date_fin_demande'])): ?>
-                                du <?=$this->fr_date($r['date_debut_demande'])?> au <?=$this->fr_date($r['date_fin_demande'])?> <?php else: ?> <?=$this->fr_date($r['date_seance'] ?? null)?>
+                                du <?=$this->fr_date($r['date_debut_demande'])?>
+                                au <?=$this->fr_date($r['date_fin_demande'])?>
+                            <?php else: ?>
+                                <?=$this->fr_date($r['date_seance'] ?? null)?>
+                                <?php if (!empty($r['cours_heure'])): ?>
+                                    <span style="color:#666; font-size:0.85rem;">
+                à <?=$this->fr_hm($r['cours_heure'])?>
+            </span>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
+
 
                         <td>
                             <details>
