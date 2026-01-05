@@ -7,17 +7,17 @@ final class LoginPresenter {
 
 
         if (!isset($_POST['csrf'], $_SESSION['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {
-            header('Location: View/login.php?err=csrf'); exit;
+            header('Location: View/login_fr.php?err=csrf'); exit;
         }
         if ($email === '' || $password === '') {
-            header('Location: View/login.php?err=empty'); exit;
+            header('Location: View/login_fr.php?err=empty'); exit;
         }
 
 
         $user = UserModel::authenticate($email, $password);
         if (!$user) {
             $u = UserModel::findByEmail($email);
-            header('Location: View/login.php?err=' . ($u ? 'badpass' : 'nouser')); exit;
+            header('Location: View/login_fr.php?err=' . ($u ? 'badpass' : 'nouser')); exit;
         }
 
         // identifiant "prenom.nom" pour affichage
@@ -41,11 +41,11 @@ final class LoginPresenter {
 
         // Redirection par rôle  tout dans connexion/View/
         switch ($user['role']) {
-            case 'ETUDIANT':    header('Location: View/dashboard_etudiant.php');   break;
+            case 'ETUDIANT':    header('Location: View/dashboard_etudiant_fr.php');   break;
             case 'ENSEIGNANT':  header('Location: View/dashboard_enseignant.php'); break;
             case 'RESPONSABLE': header('Location: View/dashboard_responsable.php');break;
             case 'SECRETAIRE':  header('Location: View/dashboard_secretaire.php'); break;
-            default:            header('Location: View/login.php');               break;
+            default:            header('Location: View/login_fr.php');               break;
         }
         exit;
     }

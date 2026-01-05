@@ -2,12 +2,11 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../config/session.php';
 
-// CORRECTION DU CHEMIN : dashboard_secretaire.php est dans connexion/View/
-// On doit remonter d'un cran pour atteindre config/
+
 require_once __DIR__ . '/../config/base_path.php';
 
 if (!isset($_SESSION['identifiant'], $_SESSION['role']) || $_SESSION['role'] !== 'SECRETAIRE') {
-    header('Location: login.php');
+    header('Location: login_fr.php');
     exit;
 }
 

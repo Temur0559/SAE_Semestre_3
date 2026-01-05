@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/base_path.php';
 
 if (!isset($_SESSION['user']['id'], $_SESSION['user']['role']) || ($_SESSION['user']['role'] ?? '') !== 'ENSEIGNANT') {
-    header('Location: ' . BASE_PATH . '/connexion/View/login.php');
+    header('Location: ' . BASE_PATH . '/connexion/View/login_fr.php');
     exit;
 }
 

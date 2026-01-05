@@ -4,16 +4,16 @@ require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/base_path.php';
 
 if (!isset($_SESSION['identifiant'], $_SESSION['role']) || $_SESSION['role'] !== 'ETUDIANT') {
-    header('Location: login.php'); exit;
+    header('Location: login_en.php'); exit;
 }
 $identifiant = htmlspecialchars($_SESSION['identifiant'], ENT_QUOTES, 'UTF-8');
 $role = htmlspecialchars($_SESSION['role'], ENT_QUOTES, 'UTF-8');
 ?>
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Espace Étudiant - Tableau de Bord</title>
+    <title>Student Area - Dashboard</title>
     <link rel="stylesheet" href="../Style.css">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/mesabsence/Style.css">
     <style>
@@ -81,8 +81,27 @@ $role = htmlspecialchars($_SESSION['role'], ENT_QUOTES, 'UTF-8');
             margin-left: auto;
             display: flex;
             align-items: center;
+            gap: 15px;
             color: white;
         }
+
+        /* Language button */
+        .lang-switch-btn {
+            background-color: white;
+            color: var(--uphf-blue-dark);
+            padding: 8px 15px;
+            border-radius: 0;
+            text-decoration: none;
+            font-weight: bold;
+            border: 2px solid white;
+            transition: all 0.2s;
+        }
+
+        .lang-switch-btn:hover {
+            background-color: var(--uphf-blue-light);
+            color: white;
+        }
+
         .user-info-logout button.btn {
             background-color: #dc3545;
             border-radius: 0;
@@ -120,35 +139,70 @@ $role = htmlspecialchars($_SESSION['role'], ENT_QUOTES, 'UTF-8');
         </div>
 
         <div class="header-nav-links">
-            <a href="<?= BASE_PATH ?>/connexion/View/dashboard_etudiant.php" class="btn active-btn">Accueil Étudiant</a>
-            <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn">Consulter Mes Absences</a>
-            <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn">Justifier une Absence</a>
+            <a href="<?= BASE_PATH ?>/connexion/View/dashboard_etudiant_en.php" class="btn active-btn">Student Home</a>
+            <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn">View My Absences</a>
+            <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn">Justify an Absence</a>
         </div>
 
         <div class="user-info-logout">
             <strong><?= $identifiant; ?> (<?= $role; ?>)</strong>
-            <form method="post" action="../logout.php" style="display: inline-block;">
-                <button class="btn" type="submit">Se déconnecter</button>
+
+            <!-- LANGUAGE BUTTON -->
+            <a href="dashboard_etudiant_fr.php" class="lang-switch-btn">🇫🇷 Français</a>
+
+            <form method="post" action="../logout.php" style="display: inline-block; margin: 0;">
+                <button class="btn" type="submit">Logout</button>
             </form>
         </div>
     </div>
 </header>
+
 <div class="main-content-area">
     <main class="card layout-1col">
-        <h1>Tableau de Bord Étudiant</h1>
-        <p>Bienvenue <?= $identifiant; ?>. Utilisez la barre de navigation en haut pour accéder aux différentes sections de votre espace.</p>
+        <h1>Student Dashboard</h1>
+        <p>Welcome <?= $identifiant; ?>. Use the navigation bar at the top to access different sections of your space.</p>
 
         <div class="nav-main" style="border-radius: 0; border: 1px solid #e0e0e0; background: #f4f7f6; padding: 20px; margin-top: 20px; display: flex; gap: 15px;">
-            <h3>Mes actions rapides :</h3>
-            <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn" style="background-color: #007bff; color: white; border-radius: 0;">Consulter Mes Absences</a>
-            <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn" style="background-color: #007bff; color: white; border-radius: 0;">Justifier une Absence</a>
+            <h3>My quick actions:</h3>
+            <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn" style="background-color: #007bff; color: white; border-radius: 0;">View My Absences</a>
+            <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn" style="background-color: #007bff; color: white; border-radius: 0;">Justify an Absence</a>
         </div>
 
         <div class="card-content" style="margin-top: 30px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
-            <h2>Informations Générales</h2>
-            <p>Ici, vous pouvez ajouter des widgets ou des informations résumées.</p>
+            <h2>General Information</h2>
+            <p>Here you can add widgets or summary information.</p>
         </div>
     </main>
 </div>
+
 </body>
 </html>
+```
+
+---
+
+## **✅ CE QUI A ÉTÉ AJOUTÉ**
+
+1. **CSS pour le bouton** (ligne 58-69) :
+- `.lang-switch-btn` : bouton blanc avec bordure
+- Survol : devient bleu UPHF
+- S'intègre parfaitement avec le design existant
+
+2. **Bouton dans le header** (ligne 107) :
+- Placé entre le nom d'utilisateur et le bouton de déconnexion
+- Utilise `gap: 15px` pour l'espacement
+- Format : `🇬🇧 English` / `🇫🇷 Français`
+
+3. **Garde tout le reste identique** :
+- Même CSS UPHF
+- Même structure
+- Même navigation
+- Même style bleu foncé
+
+---
+
+## **📸 RÉSULTAT VISUEL**
+
+Le bouton apparaît dans le header :
+```
+[Logo UPHF] [Nav links...]  [Jean.Dupont (ETUDIANT)] [🇬🇧 English] [Se déconnecter]

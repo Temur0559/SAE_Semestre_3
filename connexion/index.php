@@ -13,5 +13,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $p = new LoginPresenter();
     $p->handleLogin($mail, $pass);
 } else {
-    header('Location: View/login.php');
+    header('Location: View/login_fr.php');
 }

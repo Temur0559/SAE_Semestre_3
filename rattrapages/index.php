@@ -11,7 +11,7 @@ require_once __DIR__ . '/Model/RattrapageModel.php';
 // Récupérer l'ID de l'enseignant connecté
 $profId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
 if ($profId <= 0) {
-    header('Location: ' . BASE_PATH . '/connexion/View/login.php'); exit;
+    header('Location: ' . BASE_PATH . '/connexion/View/login_fr.php'); exit;
 }
 
 // Définir les variables utilisateur et de navigation

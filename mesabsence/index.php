@@ -12,7 +12,7 @@ require_role('ETUDIANT');
 
 $userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
 if ($userId <= 0) {
-    header('Location: ' . BASE_PATH . '/connexion/View/login.php');
+    header('Location: ' . BASE_PATH . '/connexion/View/login_fr.php');
     exit;
 }
 

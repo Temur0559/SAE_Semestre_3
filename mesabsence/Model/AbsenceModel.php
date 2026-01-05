@@ -39,64 +39,65 @@ final class AbsenceModel
     public static function getAbsencesForStudent($userId, $filtre )
     {
         $sql = "
-          SELECT
-              a.id AS absence_id,
-              s.date,
-              a.motif AS motif_court,
-              a.commentaire AS last_comment,
-              a.justification AS db_justification_status, 
-              
-              
-              (
-                  SELECT ja.id_justificatif
-                  FROM JustificatifAbsence ja
-                  JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                  WHERE ja.id_absence = a.id
-                  ORDER BY hd.date_action DESC, hd.id DESC
-                  LIMIT 1
-              ) AS justificatif_id,
-              
-              
-              (
-                  SELECT hd.action
-                  FROM JustificatifAbsence ja
-                  JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                  WHERE ja.id_absence = a.id
-                  ORDER BY hd.date_action DESC, hd.id DESC
-                  LIMIT 1
-              ) AS last_action,
-              
-              
-              (
-                  SELECT hd.motif_decision
-                  FROM JustificatifAbsence ja
-                  JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                  WHERE ja.id_absence = a.id
-                  ORDER BY hd.date_action DESC, hd.id DESC
-                  LIMIT 1
-              ) AS motif_decision_historique,
-              
-              
-              (
-                  SELECT j.verouille
-                  FROM Justificatif j
-                  JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
-                  WHERE ja.id_absence = a.id
-                  ORDER BY j.date_soumission DESC
-                  LIMIT 1
-              ) AS verouille_status
-              
-          FROM Absence a
-          JOIN Seance s ON s.id = a.id_seance
-          JOIN Enseignement e ON e.id = s.id_enseignement
-          WHERE a.id_utilisateur = :uid
-          ORDER BY s.date ASC, a.id ASC
-        ";
+      SELECT
+          a.id AS absence_id,
+          s.date,
+          a.motif AS motif_court,
+          a.commentaire AS last_comment,
+          a.justification AS db_justification_status, 
+          
+          
+          (
+              SELECT ja.id_justificatif
+              FROM JustificatifAbsence ja
+              JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+              WHERE ja.id_absence = a.id
+              ORDER BY hd.date_action DESC, hd.id DESC
+              LIMIT 1
+          ) AS justificatif_id,
+          
+          
+          (
+              SELECT hd.action
+              FROM JustificatifAbsence ja
+              JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+              WHERE ja.id_absence = a.id
+              ORDER BY hd.date_action DESC, hd.id DESC
+              LIMIT 1
+          ) AS last_action,
+          
+          
+          (
+              SELECT hd.motif_decision
+              FROM JustificatifAbsence ja
+              JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+              WHERE ja.id_absence = a.id
+              ORDER BY hd.date_action DESC, hd.id DESC
+              LIMIT 1
+          ) AS motif_decision_historique,
+          
+          
+          (
+              SELECT j.verouille
+              FROM Justificatif j
+              JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
+              WHERE ja.id_absence = a.id
+              ORDER BY j.date_soumission DESC
+              LIMIT 1
+          ) AS verouille_status
+          
+      FROM Absence a
+      JOIN Seance s ON s.id = a.id_seance
+      JOIN Enseignement e ON e.id = s.id_enseignement
+      WHERE a.id_utilisateur = :uid
+      ORDER BY s.date DESC, a.id DESC
+    ";
         $st = db()->prepare($sql);
         $st->execute([':uid' => $userId]);
         $rows = $st->fetchAll();
         $out  = [];
 
+        // TRAITER LES ABSENCES NORMALES
         foreach ($rows as $r) {
             $lastAction = $r['last_action'];
             $justificatifId = $r['justificatif_id'];
@@ -115,7 +116,7 @@ final class AbsenceModel
                 $statut = 'Rejeté';
                 $commentaireAfficher = "Rejeté : " . $motifDecisionHistorique;
             } elseif (in_array($lastAction, ['DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI'], true)) {
-                $statut = 'En révision'; // Statut de déblocage/re-upload
+                $statut = 'En révision';
                 $commentaireAfficher = "Précisions demandées : " . $motifDecisionHistorique;
             } elseif ($lastAction === 'SOUMISSION' || $dbStatus === 'INCONNU' || $dbStatus === 'NON_JUSTIFIEE') {
                 $statut = 'En attente';
@@ -125,18 +126,23 @@ final class AbsenceModel
 
             $canUpload = false;
 
-
+            // CAS 1 : Actions qui déverrouillent (demande de révision, etc.)
             if (in_array($lastAction, ['DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI'], true)) {
                 $canUpload = true;
             }
 
-
-            if ($justificatifId === null && $dbStatus === 'NON_JUSTIFIEE') {
+            // CAS 2 : Première soumission (jamais de justificatif envoyé)
+            if ($justificatifId === null && $lastAction === null && $dbStatus === 'NON_JUSTIFIEE') {
                 $canUpload = true;
             }
 
-
+            // CAS 3 : Bloqué si verrouillé
             if ($verouilleStatus === 't') {
+                $canUpload = false;
+            }
+
+            // CAS 4 : Bloqué si justificatif en attente (SOUMISSION)
+            if ($lastAction === 'SOUMISSION') {
                 $canUpload = false;
             }
 
@@ -156,23 +162,72 @@ final class AbsenceModel
                 'is_range'        => false,
             ];
         }
+
+        // AJOUTER LES DÉCLARATIONS (justificatifs de plage)
+        $pdo = db();
+        $sql_decl = "
+    SELECT 
+        j.id AS justificatif_id,
+        j.date_debut_demande AS date_debut,
+        j.date_fin_demande AS date_fin,
+        j.motif_libre AS raison_demande,
+        j.commentaire,
+        j.nom_fichier_original, -- AJOUTÉ : Pour vérifier la présence d'un fichier
+        (SELECT hd.action FROM HistoriqueDecision hd 
+         WHERE hd.id_justificatif = j.id 
+         ORDER BY hd.date_action DESC LIMIT 1) as last_action,
+        (SELECT COUNT(*) FROM JustificatifAbsence ja WHERE ja.id_justificatif = j.id) as nb_absences_liees
+    FROM Justificatif j
+    WHERE j.id_utilisateur = :uid
+    AND j.date_debut_demande IS NOT NULL
+    ORDER BY j.date_debut_demande DESC
+";
+
+        $st_decl = $pdo->prepare($sql_decl);
+        $st_decl->execute([':uid' => $userId]);
+        $declarations = $st_decl->fetchAll(\PDO::FETCH_ASSOC);
+
+        foreach ($declarations as $decl) {
+            if ($decl['last_action'] !== 'SOUMISSION' && $decl['last_action'] !== null) {
+                continue;
+            }
+
+            $dateRange = $decl['date_debut'] . ' → ' . $decl['date_fin'];
+            $statut = 'En attente';
+            $motifDisplay = 'DÉCLARATION : ' . ($decl['raison_demande'] ?? 'Absence déclarée');
+
+
+            $commentaireAffiche = !empty($decl['commentaire']) ? $decl['commentaire'] : "Déclaration en attente";
+
+            $out[] = [
+                'absence_id'      => 0,
+                'date'            => $dateRange,
+                'motif'           => $motifDisplay,
+                'justificatif_id' => (int)$decl['justificatif_id'],
+                'statut'          => $statut,
+                'commentaire'     => !empty($decl['commentaire']) ? $decl['commentaire'] : "Déclaration en attente",
+                'is_range'        => true,
+                'has_file'        => !empty($decl['nom_fichier_original']),
+            ];
+        }
+
         return $out;
     }
 
 
     public static function insertJustificatif($absenceId, $userId, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '')
     {
-        // Cette fonction est utilisée pour l'upload d'un justificatif pour une SEULE absence (via mesabsence/upload.php)
         $pdo = db();
         $pdo->beginTransaction();
         try {
-
             $st = $pdo->prepare("
                 INSERT INTO Justificatif (fichier, commentaire, id_utilisateur, nom_fichier_original, type_mime, motif_libre)
-                VALUES (:f, :comm, :u, :n, :m, :motifL)
+                VALUES (decode(:f, 'base64'), :comm, :u, :n, :m, :motifL)
                 RETURNING id
             ");
-            $st->bindValue(':f', $binaryContent, \PDO::PARAM_LOB);
+
+            // Encoder le contenu binaire en base64 pour éviter les problèmes d'encodage
+            $st->bindValue(':f', base64_encode($binaryContent), \PDO::PARAM_STR);
             $st->bindValue(':comm', $commentaire, \PDO::PARAM_STR);
             $st->bindValue(':u', $userId, \PDO::PARAM_INT);
             $st->bindValue(':n', $originalName, \PDO::PARAM_STR);
@@ -181,10 +236,8 @@ final class AbsenceModel
             $st->execute();
             $jid = (int)$st->fetchColumn();
 
-
             $st2 = $pdo->prepare("INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (:j,:a)");
             $st2->execute([':j'=>$jid, ':a'=>$absenceId]);
-
 
             $historiqueMotif = 'Soumission initiale par l\'étudiant';
             $st3 = $pdo->prepare("
@@ -197,10 +250,8 @@ final class AbsenceModel
                 ':motif_hist' => $historiqueMotif
             ]);
 
-
             $st4 = $pdo->prepare("UPDATE Absence SET justification = 'INCONNU' WHERE id = :a");
             $st4->execute([':a' => $absenceId]);
-
 
             $pdo->commit();
             return $jid;
@@ -213,137 +264,94 @@ final class AbsenceModel
 
     public static function getJustificatifFile($justifId)
     {
-
+        // Récupérer le fichier encodé en base64 depuis PostgreSQL
         $st = db()->prepare("
-            SELECT id, fichier, nom_fichier_original, type_mime
+            SELECT id, 
+                   encode(fichier, 'base64') AS fichier_base64,
+                   nom_fichier_original AS original_filename, 
+                   type_mime AS mime_type
             FROM Justificatif
             WHERE id = :id
         ");
         $st->execute([':id'=>$justifId]);
         $j = $st->fetch();
-        return $j ? $j : null;
+
+        if (!$j) return null;
+
+        // Décoder le base64 en données binaires
+        $j['fichier'] = base64_decode($j['fichier_base64']);
+        unset($j['fichier_base64']); // Nettoyer
+
+        return $j;
     }
 
-
-    public static function insertDemandeJustification(
-        $userId,
-        string $dateDebut,
-        string $dateFin,
-        $originalName,
-        $mime,
-        $binaryContent,
-        string $commentaire = '',
-        string $motifLibre = ''
-    ) {
-
+    public static function insertDemandeJustification($userId, string $dateDebut, string $dateFin, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '') {
         $pdo = db();
-        $pdo->beginTransaction();
-        try {
 
-            $st = $pdo->prepare("
-                INSERT INTO Justificatif (
-                    fichier, commentaire, id_utilisateur, nom_fichier_original, type_mime, motif_libre, 
-                    date_debut_demande, date_fin_demande
-                )
+        // On force l'affichage des erreurs pour ce bloc
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+        try {
+            // 1. Insertion simple sans transaction complexe pour tester
+            $sql = "INSERT INTO Justificatif (fichier, commentaire, id_utilisateur, nom_fichier_original, type_mime, motif_libre, date_debut_demande, date_fin_demande)
                 VALUES (:f, :comm, :u, :n, :m, :motifL, :dd, :df)
-                RETURNING id
-            ");
+                RETURNING id";
+
+            $st = $pdo->prepare($sql);
+
 
             $st->bindValue(':f', $binaryContent, $binaryContent === null ? \PDO::PARAM_NULL : \PDO::PARAM_LOB);
-            $st->bindValue(':comm', $commentaire, \PDO::PARAM_STR);
-            $st->bindValue(':u', $userId, \PDO::PARAM_INT);
-            $st->bindValue(':n', $originalName, $originalName === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
-            $st->bindValue(':m', $mime, $mime === null ? \PDO::PARAM_NULL : \PDO::PARAM_STR);
+            $st->bindValue(':comm', $commentaire);
+            $st->bindValue(':u', (int)$userId, \PDO::PARAM_INT);
+            $st->bindValue(':n', $originalName);
+            $st->bindValue(':m', $mime);
+            $st->bindValue(':motifL', $motifLibre);
+            $st->bindValue(':dd', $dateDebut);
+            $st->bindValue(':df', $dateFin);
 
-            $st->bindValue(':motifL', $motifLibre, \PDO::PARAM_STR);
-            $st->bindValue(':dd', $dateDebut, \PDO::PARAM_STR);
-            $st->bindValue(':df', $dateFin, \PDO::PARAM_STR);
             $st->execute();
             $jid = (int)$st->fetchColumn();
 
+            // 2. Insertion Historique (séparée)
+            $sqlHist = "INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision) VALUES ('SOUMISSION', ?, ?, ?)";
+            $pdo->prepare($sqlHist)->execute([$jid, $userId, "Déclaration du $dateDebut au $dateFin"]);
 
-            $historiqueMotif = 'Déclaration d\'absence/justification pour la plage du ' . $dateDebut . ' au ' . $dateFin;
-            $st3 = $pdo->prepare("
-                INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision)
-                VALUES ('SOUMISSION', :j, :u, :motif_hist)
-            ");
-            $st3->execute([
-                ':j' => $jid,
-                ':u' => $userId,
-                ':motif_hist' => $historiqueMotif
-            ]);
-
-            // US2: Tente de lier toutes les absences passées dans la plage au nouveau justificatif
+            // 3. Liaison (uniquement si le reste a marché)
+            // On commente la liaison pour vérifier si l'insertion de base fonctionne enfin
             self::linkJustificatifToAbsences($jid, $userId, $dateDebut, $dateFin);
 
-            $pdo->commit();
             return $jid;
 
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            throw $e;
+        } catch (\Exception $e) {
+            // Si ça rate, on arrête tout et on affiche l'erreur en GROS
+            echo "<h1>ERREUR SQL DETECTEE</h1>";
+            echo "<pre>" . $e->getMessage() . "</pre>";
+            die();
         }
     }
 
-
-    public static function linkJustificatifToAbsences(int $justifId, int $userId, string $dateDebut, string $dateFin): int
-    {
+    public static function linkJustificatifToAbsences(int $justifId, int $userId, string $dateDebut, string $dateFin): int {
         $pdo = db();
-        // Utilise la même transaction que insertDemandeJustification ou en ouvre une nouvelle si nécessaire
-        $inTransaction = $pdo->inTransaction();
-        if (!$inTransaction) $pdo->beginTransaction();
+        // AUCUNE transaction ici, on utilise celle du parent.
 
-        try {
-            // 1. Trouver toutes les absences concernées (INCONNUES ou NON_JUSTIFIEE)
-            // L'intervalle de temps s'étend jusqu'à l'absence la plus récente.
-            $sql_select = "
-                SELECT a.id AS absence_id
-                FROM Absence a
-                JOIN Seance s ON s.id = a.id_seance
-                WHERE a.id_utilisateur = :uid
-                  AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
-                  AND s.date BETWEEN :dd AND :df
-                  -- Exclure celles déjà couvertes par une SOUMISSION acceptée/en attente pour éviter les doublons
-                  AND NOT EXISTS (
-                      SELECT 1 FROM JustificatifAbsence ja
-                      JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                      WHERE ja.id_absence = a.id AND hd.action IN ('SOUMISSION', 'ACCEPTATION')
-                  );
-            ";
-            $st_select = $pdo->prepare($sql_select);
-            $st_select->execute([
-                ':uid' => $userId,
-                ':dd'  => $dateDebut,
-                ':df'  => $dateFin,
-            ]);
-            $absenceIds = $st_select->fetchAll(\PDO::FETCH_COLUMN);
+        $sql = "SELECT a.id FROM Absence a JOIN Seance s ON s.id = a.id_seance
+            WHERE a.id_utilisateur = :uid AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
+            AND s.date BETWEEN :dd AND :df
+            AND NOT EXISTS (SELECT 1 FROM JustificatifAbsence ja JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+                            WHERE ja.id_absence = a.id AND hd.action IN ('SOUMISSION', 'ACCEPTATION'))";
 
-            if (empty($absenceIds)) {
-                if (!$inTransaction) $pdo->commit();
-                return 0; // Aucune absence à lier
-            }
+        $st = $pdo->prepare($sql);
+        $st->execute([':uid' => $userId, ':dd' => $dateDebut, ':df' => $dateFin]);
+        $ids = $st->fetchAll(\PDO::FETCH_COLUMN);
 
-            // 2. Lier le justificatif et mettre à jour le statut de l'absence
-            $count = 0;
-            $st_link = $pdo->prepare("INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (:j,:a) ON CONFLICT DO NOTHING");
-            $st_update_abs = $pdo->prepare("UPDATE Absence SET justification = 'INCONNU' WHERE id = :a AND id_utilisateur = :u");
+        if (empty($ids)) return 0;
 
-            foreach ($absenceIds as $absenceId) {
-                $st_link->execute([':j' => $justifId, ':a' => (int)$absenceId]);
-                $st_update_abs->execute([':a' => (int)$absenceId, ':u' => $userId]);
-                $count++;
-            }
-
-            if (!$inTransaction) $pdo->commit();
-            return $count;
-
-        } catch (\Throwable $e) {
-            if (!$inTransaction) $pdo->rollBack();
-            // Si c'était déjà en transaction, l'exception sera propagée et gérée par l'appelant
-            throw $e;
+        $stLink = $pdo->prepare("INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (:j, :a) ON CONFLICT DO NOTHING");
+        foreach ($ids as $id) {
+            $stLink->execute([':j' => $justifId, ':a' => (int)$id]);
         }
+        return count($ids);
     }
-
 
     public static function getPendingRangeJustifications(int $userId): array
     {

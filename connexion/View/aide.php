@@ -45,7 +45,7 @@ require_once __DIR__ . '/../config/base_path.php'; // Inclure BASE_PATH pour les
                 <br><a href="mailto:support@uphf.fr">support@uphf.fr</a>
             </li>
         </ul>
-        <p><a class="btn btn-secondary" href="login.php">← Retour à la connexion</a></p>
+        <p><a class="btn btn-secondary" href="login_fr.php">← Retour à la connexion</a></p>
     </main>
 </div>
 </body>

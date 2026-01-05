@@ -2,11 +2,10 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../config/session.php';
 
-// On remonte d'un dossier pour atteindre config/base_path.php
 require_once __DIR__ . '/../config/base_path.php';
 
 if (!isset($_SESSION['identifiant'], $_SESSION['role']) || $_SESSION['role'] !== 'RESPONSABLE') {
-    header('Location: login.php');
+    header('Location: login_fr.php');
     exit;
 }
 

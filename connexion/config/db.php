@@ -1,41 +1,51 @@
 <?php
 declare(strict_types=1);
 
-// Charger les variables d'environnement
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-try {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../..');
-    $dotenv->load();
-} catch (\Exception $e) {
-    throw new \RuntimeException("Impossible de charger le fichier .env : " . $e->getMessage());
-}
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
+$dotenv->load();
+
 
 function db(): PDO {
     static $pdo = null;
-    if ($pdo !== null) return $pdo;
 
-    // Récupération des variables d'environnement
-    $host = $_ENV['DB_HOST'] ?? throw new \RuntimeException('DB_HOST manquant dans .env');
-    $port = $_ENV['DB_PORT'] ?? throw new \RuntimeException('DB_PORT manquant dans .env');
-    $db   = $_ENV['DB_NAME'] ?? throw new \RuntimeException('DB_NAME manquant dans .env');
-    $user = $_ENV['DB_USER'] ?? throw new \RuntimeException('DB_USER manquant dans .env');
-    $pass = $_ENV['DB_PASSWORD'] ?? throw new \RuntimeException('DB_PASSWORD manquant dans .env');
+    if ($pdo === null) {
+        try {
+            $host = $_ENV['DB_HOST'];
+            $port = $_ENV['DB_PORT'];
+            $dbname = $_ENV['DB_NAME'];
+            $user = $_ENV['DB_USER'];
+            $password = $_ENV['DB_PASSWORD'];
 
-    $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=require";
 
-    try {
-        $pdo = new PDO($dsn, $user, $pass, [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
-            PDO::ATTR_PERSISTENT         => false,
-        ]);
-        return $pdo;
-    } catch (PDOException $e) {
-        $message = "Erreur de connexion à la base de données: " . $e->getMessage();
-        // Masquer le mot de passe dans les logs
-        $message = str_replace($pass, '***PASSWORD HIDDEN***', $message);
-        throw new \RuntimeException($message, 0, $e);
+            preg_match('/^(ep-[a-z0-9-]+)/', $host, $matches);
+            $endpointId = $matches[1] ?? null;
+
+            if (!$endpointId) {
+                throw new RuntimeException("Impossible d'extraire l'endpoint ID de l'hôte: $host");
+            }
+
+            // Construction du DSN avec l'endpoint ID
+            $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};options='--client_encoding=UTF8 endpoint={$endpointId}'";
+
+            $pdo = new PDO(
+                $dsn,
+                $user,
+                $password,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                ]
+            );
+        } catch (PDOException $e) {
+            error_log("Erreur de connexion DB: " . $e->getMessage());
+            throw new RuntimeException("Erreur de connexion à la base de données: " . $e->getMessage());
+        }
     }
+
+    return $pdo;
 }

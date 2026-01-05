@@ -23,7 +23,7 @@ class ActionModel {
     }
 
 
-    // pour deverouille un justificatif 
+    // pour deverouille un justificatif
 
     public function deverouille(int $id) {
 

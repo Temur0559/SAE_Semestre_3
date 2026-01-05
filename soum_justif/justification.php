@@ -15,7 +15,7 @@ require_once __DIR__ . '/../Notification/NotificationService.php';
 
 
 $userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
-if ($userId <= 0) { header('Location: ' . BASE_PATH . '/connexion/View/login.php'); exit; }
+if ($userId <= 0) { header('Location: ' . BASE_PATH . '/connexion/View/login_fr.php'); exit; }
 $userEmail = $_SESSION['user']['email'] ?? 'inconnu@uphf.fr';
 $userName = trim(($_SESSION['user']['prenom'] ?? '') . ' ' . ($_SESSION['user']['nom'] ?? ''));
 
@@ -25,7 +25,6 @@ $role = htmlspecialchars($_SESSION['role'] ?? 'ETUDIANT', ENT_QUOTES, 'UTF-8');
 
 
 $message = '';
-// Variables pour garder l'état du formulaire après une erreur
 $dateDebut = $_POST["dateDebut"] ?? '';
 $dateFin = $_POST["dateFin"] ?? '';
 $commentaire = $_POST["motifSelected"] ?? '';
@@ -42,14 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
 
     $hasComment = !empty($commentaire);
 
-    // Vérification de la présence de fichiers uploadés sans erreur
     $uploadedFiles = [];
-    $isMultiFile = isset($files['tmp_name']) && is_array($files['tmp_name']);
 
-    if ($isMultiFile) {
+    if (isset($files['tmp_name']) && is_array($files['tmp_name'])) {
         for ($i = 0; $i < count($files['tmp_name']); $i++) {
-            // Seuls les fichiers qui n'ont pas d'erreur d'upload sont pris en compte
-            if ($files['error'][$i] === UPLOAD_ERR_OK) {
+            // Vérifier que le fichier existe ET qu'il n'y a pas d'erreur
+            if (!empty($files['tmp_name'][$i]) && $files['error'][$i] === UPLOAD_ERR_OK) {
                 $uploadedFiles[] = [
                         'name' => $files['name'][$i],
                         'type' => $files['type'][$i],
@@ -75,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
         try {
             $justifIds = [];
 
+            // 1. Si des fichiers ont été uploadés, créer un justificatif pour chacun
             foreach ($uploadedFiles as $file) {
                 $original = (string)$file['name'];
                 $mime     = (string)($file['type'] ?: 'application/octet-stream');
@@ -92,15 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
                 );
             }
 
-            // 2. Si AUCUN fichier n'a été uploadé mais qu'un commentaire est présent, on insère une déclaration simple (fichier NULL)
+            // 2. Si AUCUN fichier n'a été uploadé mais qu'un commentaire est présent,
+            //    on insère une déclaration simple (fichier NULL)
             if (empty($justifIds) && $hasComment) {
                 $justifIds[] = AbsenceModel::insertDemandeJustification(
                         $userId,
                         $dateDebut,
                         $dateFin,
-                        null, // originalName
-                        null, // mime
-                        null, // binaryContent
+                        null,
+                        null,
+                        null,
                         $commentaire,
                         $raison
                 );
@@ -113,7 +112,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
             $justifId = $justifIds[0]; // ID du premier justificatif pour l'email/redirection
             $nbFichiers = count($justifIds);
 
-            // 3. Liaison automatique des absences dans la plage (déjà fait dans AbsenceModel::insertDemandeJustification)
 
             // 4. Notification et Redirection
             $subject = "Confirmation de soumission de justificatif d'absence - UPHF";
@@ -134,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
 
         } catch (Throwable $e) {
             $message = "Erreur d'insertion : " . $e->getMessage();
+            error_log("ERREUR justification.php : " . $e->getMessage());
         }
     }
 }
@@ -367,7 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
         </div>
 
         <div class="header-nav-links">
-            <a href="<?= BASE_PATH ?>/connexion/View/dashboard_etudiant.php" class="btn">Accueil Étudiant</a>
+            <a href="<?= BASE_PATH ?>/connexion/View/dashboard_etudiant_fr.php" class="btn">Accueil Étudiant</a>
             <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn">Consulter Mes Absences</a>
             <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn active-btn">Justifier une Absence</a>
         </div>
@@ -412,7 +411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
         </div>
 
         <div class="form-row-comment">
-            <textarea id="motifSelected" name="motifSelected" placeholder="Ajouter un commentaire (Obligatoire si pas de fichier)..." class="comment-area"><?= htmlspecialchars($commentaire ?? '') ?></textarea>
+            <textarea id="motifSelected" name="motifSelected" placeholder="Ajouter un commentaire..." class="comment-area" required><?= htmlspecialchars($commentaire ?? '') ?></textarea>
         </div>
 
         <div class="form-row-submit">
@@ -515,15 +514,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
     document.addEventListener('DOMContentLoaded', () => {
         const alertDiv = document.querySelector('.alert-message');
         if (alertDiv) {
-            // Utiliser la classe pour vérifier l'état
-            const isError = alertDiv.classList.contains('error');
-
-            // S'assurer que le formulaire récupère les fichiers en cas d'erreur de soumission
-            if (isError && typeof lastSubmittedFiles !== 'undefined' && lastSubmittedFiles.length > 0) {
-                // Reconstituer le fileStore si nécessaire (logique complexe à implémenter sans le PHP backend)
-                // Pour l'instant, on se concentre sur l'affichage et la soumission
-            }
-
             alertDiv.style.opacity = '1';
             setTimeout(() => {
                 alertDiv.style.opacity = '0';
@@ -534,15 +524,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
                 }
             });
         }
-
-
-        document.getElementById('fileSelected').addEventListener('click', (e) => {
-            // Effacer l'ancien store uniquement si la sélection n'est pas vide
-            if (fileStore.files.length > 0) {
-                // Ne pas effacer, laisser le onchange gérer l'ajout
-            }
-        });
-
     });
 
 </script>

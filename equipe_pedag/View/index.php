@@ -167,6 +167,7 @@ class IndexView {
                 .btn { width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: bold; color: white; }
                 .primary { background: var(--uphf-blue-light); }
                 .danger { background: var(--danger-color); }
+                .warning { background: #ffc107; color: #000; }
                 .neutral { background: #6c757d; }
             </style>
         </head>
@@ -258,17 +259,25 @@ class IndexView {
                         <div class="detail-actions">
                             <form method="post" action="index.php?page=traiter_action" class="stack">
                                 <input type="hidden" name="id" value="<?=$selected['id']?>">
+                                <input type="hidden" name="absence_id" value="<?=$selected['absence_id']?>">
                                 <input type="text" name="motifDecision" placeholder="Motif (optionnel)" class="inp">
                                 <button class="btn primary" name="action" value="ACCEPTATION">Accepter</button>
                             </form>
 
+                            <form method="post" action="index.php?page=traiter_action" class="stack">
+                                <input type="hidden" name="id" value="<?=$selected['id']?>">
+                                <input type="hidden" name="absence_id" value="<?=$selected['absence_id']?>">
+                                <input type="text" name="motifDecision" placeholder="Raison" class="inp">
+                                <button class="btn warning" name="action" value="PASSER_EN_REVISION_SPECIAL">Passer en révision</button>
+                            </form>
+
                             <form method="post" action="index.php?page=rejet" class="stack">
                                 <input type="hidden" name="id" value="<?=$selected['id']?>">
+                                <input type="hidden" name="absence_id" value="<?=$selected['absence_id']?>">
                                 <input type="text" name="motifDecision" placeholder="Motif du rejet" class="inp" required>
                                 <button class="btn danger">Rejeter</button>
                             </form>
                         </div>
-                    </div>
                 <?php endif; ?>
             </section>
         </div>

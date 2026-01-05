@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 
 function require_login() {
-    if (empty($_SESSION['user'])) { header('Location: ../connexion/View/login.php'); exit; }
+    if (empty($_SESSION['user'])) { header('Location: ../connexion/View/login_fr.php'); exit; }
 }
 function require_role() {
     $roles = func_get_args();

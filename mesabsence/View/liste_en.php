@@ -8,12 +8,11 @@ if (!isset($_SESSION)) { session_start(); }
 $identifiant = htmlspecialchars($_SESSION['identifiant'] ?? '', ENT_QUOTES, 'UTF-8');
 $role = htmlspecialchars($_SESSION['role'] ?? '', ENT_QUOTES, 'UTF-8');
 
-// Récupération des données pour la page
 require_once __DIR__ . '/../Model/AbsenceModel.php';
 
 $userId = $_SESSION['user']['id'] ?? 0;
 if ($userId === 0) {
-    header('Location: ' . BASE_PATH . '/connexion/View/login_fr.php');
+    header('Location: ' . BASE_PATH . '/connexion/View/login_en.php');
     exit;
 }
 
@@ -24,10 +23,10 @@ $ok = $_GET['ok'] ?? null;
 
 ?>
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Mes absences</title>
+    <title>My Absences</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/mesabsence/Style.css">
     <link rel="stylesheet" href="<?= BASE_PATH ?>/connexion/Style.css">
@@ -174,7 +173,7 @@ $ok = $_GET['ok'] ?? null;
         .status {
             display: inline-block;
             padding: 4px 8px;
-            border-radius: 12px; /* Pastille ronde */
+            border-radius: 12px;
             font-size: 0.8em;
             font-weight: bold;
             color: white;
@@ -202,47 +201,46 @@ $ok = $_GET['ok'] ?? null;
         </div>
 
         <div class="header-nav-links">
-            <a href="<?= BASE_PATH ?>/connexion/View/dashboard_etudiant_fr.php" class="btn">Accueil Étudiant</a>
-            <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn active-btn">Consulter Mes Absences</a>
-            <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn">Justifier une Absence</a>
+            <a href="<?= BASE_PATH ?>/connexion/View/dashboard_etudiant_en.php" class="btn">Student Home</a>
+            <a href="<?= BASE_PATH ?>/mesabsence/index.php" class="btn active-btn">View My Absences</a>
+            <a href="<?= BASE_PATH ?>/soum_justif/justification.php" class="btn">Justify an Absence</a>
         </div>
 
         <div class="user-info-logout">
             <strong><?= $identifiant; ?> (<?= $role; ?>)</strong>
 
-            <!-- BOUTON LANGUE -->
-            <a href="<?= BASE_PATH ?>/mesabsence/View/liste_en.php<?= isset($_GET['filtre']) ? '?filtre=' . urlencode($_GET['filtre']) : '' ?>" class="lang-switch-btn">🇬🇧 English</a>
+            <a href="<?= BASE_PATH ?>/mesabsence/View/liste.php<?= isset($_GET['filtre']) ? '?filtre=' . urlencode($_GET['filtre']) : '' ?>" class="lang-switch-btn">🇫🇷 Français</a>
 
             <form method="post" action="<?= BASE_PATH ?>/connexion/logout.php" style="display: inline-block; margin: 0;">
-                <button class="btn" type="submit">Se déconnecter</button>
+                <button class="btn" type="submit">Logout</button>
             </form>
         </div>
     </div>
 </header>
 
 <div class="main-content-area">
-    <h1 class="title">Mes absences</h1>
+    <h1 class="title">My Absences</h1>
 
     <?php
     if (isset($ok) && $ok === 'justif_sent'):
         ?>
         <div class="alert success">
-            **Justificatif envoyé avec succès ! Il est maintenant en statut "En attente".**
+            **Justification sent successfully! It is now in "Pending" status.**
         </div>
     <?php endif; ?>
 
     <div class="toolbar">
         <form action="<?= BASE_PATH ?>/mesabsence/index.php" method="get" class="filter-form">
-            <label for="filtre">Filtrer :</label>
+            <label for="filtre">Filter:</label>
             <select name="filtre" id="filtre" onchange="submitFiltre(this)">
                 <?php
                 $filtreActuel = isset($_GET['filtre']) ? $_GET['filtre'] : 'tous';
                 $opts = [
-                        'tous'        => 'Tous',
-                        'accepté'     => 'Accepté',
-                        'rejeté'      => 'Rejeté',
-                        'en révision' => 'En révision',
-                        'en attente'  => 'En attente'
+                    'tous'        => 'All',
+                    'accepté'     => 'Accepted',
+                    'rejeté'      => 'Rejected',
+                    'en révision' => 'Under Review',
+                    'en attente'  => 'Pending'
                 ];
                 foreach ($opts as $val => $lab) {
                     $sel = (strtolower($filtreActuel) === strtolower($val)) ? 'selected' : '';
@@ -265,22 +263,20 @@ $ok = $_GET['ok'] ?? null;
         </aside>
 
         <section class="table-wrap">
-            <h2>Historique Complet des Absences et Déclarations</h2>
+            <h2>Complete History of Absences and Declarations</h2>
             <table class="abs-table">
                 <thead>
                 <tr>
-                    <th>DATE (ou Plage)</th>
-                    <th>COURS / MOTIF</th>
-                    <th>JUSTIFICATIF</th>
-                    <th>STATUT</th>
-                    <th>COMMENTAIRE</th>
+                    <th>DATE (or Range)</th>
+                    <th>COURSE / REASON</th>
+                    <th>JUSTIFICATION</th>
+                    <th>STATUS</th>
+                    <th>COMMENT</th>
                     <th>ACTION</th>
                 </tr>
                 </thead>
-
                 <tbody>
                 <?php foreach ($absences as $a): ?>
-
                     <?php
                     $isRange = $a['is_range'] ?? false;
                     $s = strtolower($a['statut']);
@@ -295,11 +291,17 @@ $ok = $_GET['ok'] ?? null;
                     } elseif ($s === 'en attente') {
                         $cls = 'pending';
                     }
-                    $displayStatus = $a['statut'];
 
+                    $displayStatus = match($s) {
+                        'accepté', 'accepte' => 'Accepted',
+                        'rejeté', 'rejete' => 'Rejected',
+                        'en révision', 'en revision' => 'Under Review',
+                        'en attente' => 'Pending',
+                        default => $a['statut']
+                    };
 
                     if (strtolower($filtreActuel) !== 'tous') {
-                        if (strpos(strtolower($displayStatus), strtolower($filtreActuel)) === false) {
+                        if (strpos(strtolower($a['statut']), strtolower($filtreActuel)) === false) {
                             continue;
                         }
                     }
@@ -319,14 +321,10 @@ $ok = $_GET['ok'] ?? null;
                         <td><?= htmlspecialchars($a['commentaire'] ?? '') ?></td>
                         <td>
                             <?php if ($isRange): ?>
-                                <button class="btn-disabled" disabled>DÉCLARATION</button>
+                                <button class="btn-disabled" disabled>DECLARATION</button>
                             <?php else:
-
                                 $s_lower = strtolower(trim($a['statut']));
-
-
                                 $peutDeposer = empty($a['justificatif_id']) || ($s_lower === 'en révision' || $s_lower === 'en revision');
-
 
                                 if ($s_lower === 'en attente') {
                                     $peutDeposer = false;
@@ -336,10 +334,10 @@ $ok = $_GET['ok'] ?? null;
                                     <form action="<?= BASE_PATH ?>/mesabsence/upload.php" method="post" enctype="multipart/form-data" class="upload-form">
                                         <input type="hidden" name="absence_id" value="<?= (int)$a['absence_id'] ?>">
                                         <input type="file" name="justificatif" required>
-                                        <button type="submit" class="btn-insert">INSÉRER</button>
+                                        <button type="submit" class="btn-insert">INSERT</button>
                                     </form>
                                 <?php else: ?>
-                                    <button class="btn-disabled" disabled>INDISPONIBLE</button>
+                                    <button class="btn-disabled" disabled>UNAVAILABLE</button>
                                 <?php endif; ?>
                             <?php endif; ?>
                         </td>
