@@ -33,22 +33,21 @@ class AbsenceTest extends TestCase
 
     #Test 2 : Filtrage des absences par statut
 
-    public function testFilterAbsencesByStatus(): void
+    public function testFilterAbsencesByStatus()
     {
-        // Arrange
-        $studentId = 1;
+        $userId = 1; // ID de l'étudiant de test
+        $filtre = 'en attente';
+        $absences = AbsenceModel::getAbsencesForStudent($userId, $filtre);
 
-        // Act : Filtrer uniquement les absences "en attente"
-        $absencesEnAttente = AbsenceModel::getAbsencesForStudent($studentId, 'attente');
-
-        // Assert
-        $this->assertIsArray($absencesEnAttente);
-
-        // Vérifier que le filtre fonctionne
-        foreach ($absencesEnAttente as $absence) {
+        foreach ($absences as $absence) {
             $statut = strtolower($absence['statut']);
-            $this->assertStringContainsString('attente', $statut,
-                "Toutes les absences devraient être 'en attente'");
+
+            // MODIFICATION : On accepte 'en attente' OU 'en révision'
+            // car le filtre 'en attente' inclut désormais les dossiers à compléter
+            $this->assertTrue(
+                strpos($statut, 'attente') !== false || strpos($statut, 'révision') !== false,
+                "Le statut devrait être 'en attente' ou 'en révision', reçu : " . $statut
+            );
         }
     }
 
@@ -67,5 +66,19 @@ class AbsenceTest extends TestCase
         $this->assertArrayHasKey('nom', $identity);
         $this->assertArrayHasKey('prenom', $identity);
         $this->assertArrayHasKey('ine', $identity);
+    }
+    public function testSubmitJustificatif() {
+        $userId = 1;
+        $absenceId = 10; // ID d'absence test
+        $fileName = "certificat_test.pdf";
+        $binaryContent = "%PDF-1.4 test content";
+        $mimeType = "application/pdf";
+
+        $justifId = AbsenceModel::insertJustificatif(
+            $absenceId, $userId, $fileName, $mimeType, $binaryContent, "Commentaire test", "Maladie"
+        );
+
+        $this->assertIsInt($justifId);
+        $this->assertGreaterThan(0, $justifId);
     }
 }

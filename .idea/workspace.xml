@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Correction de bug">
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="amélioration des statistiques">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Statistiques/Model/StatistiquesModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/Statistiques/Model/StatistiquesModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Statistiques/View/statistiques_etudiant.php" beforeDir="false" afterPath="$PROJECT_DIR$/Statistiques/View/statistiques_etudiant.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Statistiques/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/Statistiques/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.phpunit.result.cache" beforeDir="false" afterPath="$PROJECT_DIR$/.phpunit.result.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/View/liste_en.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste_en.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/AbsenceTest.php" beforeDir="false" afterPath="$PROJECT_DIR$/tests/AbsenceTest.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,6 +107,7 @@
     "PHP Script.index.php.executor": "Run",
     "PHP Script.temp.php.executor": "Run",
     "PHPUnit.AbsenceTest.executor": "Run",
+    "PHPUnit.AuthenticationTest.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -204,7 +205,7 @@
       <workItem from="1766846851504" duration="88000" />
       <workItem from="1767536732100" duration="6701000" />
       <workItem from="1767647234898" duration="7154000" />
-      <workItem from="1767721122449" duration="4722000" />
+      <workItem from="1767721122449" duration="8816000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -318,7 +319,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767725239280</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="amélioration des statistiques">
+      <option name="closed" value="true" />
+      <created>1767726111600</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1767726111600</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -346,6 +355,7 @@
     <MESSAGE value="Sécurisation" />
     <MESSAGE value="Ajout des statistiques et liaison de toutes les pages entre eux." />
     <MESSAGE value="Correction de bug" />
-    <option name="LAST_COMMIT_MESSAGE" value="Correction de bug" />
+    <MESSAGE value="amélioration des statistiques" />
+    <option name="LAST_COMMIT_MESSAGE" value="amélioration des statistiques" />
   </component>
 </project>
