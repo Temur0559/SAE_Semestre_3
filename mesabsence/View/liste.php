@@ -318,29 +318,31 @@ $ok = $_GET['ok'] ?? null;
                         <td class="status <?= $cls ?>"><?= htmlspecialchars($displayStatus) ?></td>
                         <td><?= htmlspecialchars($a['commentaire'] ?? '') ?></td>
                         <td>
-                            <?php if ($isRange): ?>
+                            <?php
+                            // On récupère les propriétés de la ligne actuelle
+                            $isRange = $a['is_range'] ?? false;
+                            // On vérifie si le statut est "en révision" (indépendamment de la casse)
+                            $s_lower = strtolower(trim($a['statut']));
+                            $enRevision = ($s_lower === 'en révision' || $s_lower === 'en revision');
+
+                            // 1. Si l'upload est autorisé (Absence normale en révision OU Déclaration en révision)
+                            if ($enRevision): ?>
+                                <form action="<?= BASE_PATH ?>/mesabsence/upload.php" method="post" enctype="multipart/form-data" class="upload-form">
+                                    <input type="hidden" name="absence_id" value="<?= (int)($a['absence_id'] ?? 0) ?>">
+                                    <input type="hidden" name="justificatif_id" value="<?= (int)($a['justificatif_id'] ?? 0) ?>">
+                                    <input type="file" name="justificatif" required>
+                                    <button type="submit" class="btn-insert">INSÉRER</button>
+                                </form>
+
+                            <?php
+                            // 2. Sinon, si c'est une plage horaire classique (en attente)
+                            elseif ($isRange): ?>
                                 <button class="btn-disabled" disabled>DÉCLARATION</button>
-                            <?php else:
 
-                                $s_lower = strtolower(trim($a['statut']));
-
-
-                                $peutDeposer = empty($a['justificatif_id']) || ($s_lower === 'en révision' || $s_lower === 'en revision');
-
-
-                                if ($s_lower === 'en attente') {
-                                    $peutDeposer = false;
-                                }
-
-                                if ($peutDeposer): ?>
-                                    <form action="<?= BASE_PATH ?>/mesabsence/upload.php" method="post" enctype="multipart/form-data" class="upload-form">
-                                        <input type="hidden" name="absence_id" value="<?= (int)$a['absence_id'] ?>">
-                                        <input type="file" name="justificatif" required>
-                                        <button type="submit" class="btn-insert">INSÉRER</button>
-                                    </form>
-                                <?php else: ?>
-                                    <button class="btn-disabled" disabled>INDISPONIBLE</button>
-                                <?php endif; ?>
+                            <?php
+                            // 3. Cas par défaut pour les absences unitaires non modifiables
+                            else: ?>
+                                <button class="btn-disabled" disabled>INDISPONIBLE</button>
                             <?php endif; ?>
                         </td>
                     </tr>

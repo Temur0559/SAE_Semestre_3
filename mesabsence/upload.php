@@ -15,9 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $userId = $_SESSION['user']['id'] ?? 0;
 $absenceId = (int)($_POST['absence_id'] ?? 0);
+$justificatifId = (int)($_POST['justificatif_id'] ?? 0); // Récupère l'ID envoyé par la vue
 
-// CORRECTION : Le nom du champ est "justificatif", pas "fichier"
-if ($absenceId <= 0 || !isset($_FILES['justificatif'])) {
+// MODIFICATION : On accepte si on a une absence OU un justificatif à mettre à jour
+if (($absenceId <= 0 && $justificatifId <= 0) || !isset($_FILES['justificatif'])) {
     header('Location: index.php?err=missing');
     exit;
 }
@@ -46,21 +47,36 @@ if ($binaryContent === false) {
 }
 
 try {
-    // Insertion du justificatif
-    $justifId = AbsenceModel::insertJustificatif(
-        $absenceId,
-        $userId,
-        $originalName,
-        $mimeType,
-        $binaryContent,
-        $commentaire,
-        $motifLibre
-    );
+    if ($justificatifId > 0) {
 
-    if ($justifId > 0) {
-        header('Location: index.php?ok=justif_sent');
+        $success = AbsenceModel::updateJustificatif(
+            $justificatifId,
+            $userId,
+            $originalName,
+            $mimeType,
+            $binaryContent
+        );
+        if ($success) {
+            header('Location: index.php?ok=justif_sent');
+        } else {
+            header('Location: index.php?err=db');
+        }
     } else {
-        header('Location: index.php?err=db');
+        $justifId = AbsenceModel::insertJustificatif(
+            $absenceId,
+            $userId,
+            $originalName,
+            $mimeType,
+            $binaryContent,
+            $commentaire,
+            $motifLibre
+        );
+
+        if ($justifId > 0) {
+            header('Location: index.php?ok=justif_sent');
+        } else {
+            header('Location: index.php?err=db');
+        }
     }
 } catch (\Throwable $e) {
     error_log("Erreur upload justificatif : " . $e->getMessage());

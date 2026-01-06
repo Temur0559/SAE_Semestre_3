@@ -163,7 +163,6 @@ final class AbsenceModel
             ];
         }
 
-        // AJOUTER LES DÉCLARATIONS (justificatifs de plage)
         $pdo = db();
         $sql_decl = "
     SELECT 
@@ -187,17 +186,24 @@ final class AbsenceModel
         $st_decl->execute([':uid' => $userId]);
         $declarations = $st_decl->fetchAll(\PDO::FETCH_ASSOC);
 
+
         foreach ($declarations as $decl) {
-            if ($decl['last_action'] !== 'SOUMISSION' && $decl['last_action'] !== null) {
+
+            if (in_array($decl['last_action'], ['ACCEPTATION', 'REJET'])) {
                 continue;
             }
 
             $dateRange = $decl['date_debut'] . ' → ' . $decl['date_fin'];
+
+            // Déterminer le statut exact pour l'étudiant
+            $action = $decl['last_action'];
             $statut = 'En attente';
+            if (in_array($action, ['DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI'])) {
+                $statut = 'En révision';
+            }
+
             $motifDisplay = 'DÉCLARATION : ' . ($decl['raison_demande'] ?? 'Absence déclarée');
-
-
-            $commentaireAffiche = !empty($decl['commentaire']) ? $decl['commentaire'] : "Déclaration en attente";
+            $commentaireAffiche = !empty($decl['commentaire']) ? $decl['commentaire'] : ($statut === 'En révision' ? "Précisions demandées" : "Déclaration en attente");
 
             $out[] = [
                 'absence_id'      => 0,
@@ -205,9 +211,10 @@ final class AbsenceModel
                 'motif'           => $motifDisplay,
                 'justificatif_id' => (int)$decl['justificatif_id'],
                 'statut'          => $statut,
-                'commentaire'     => !empty($decl['commentaire']) ? $decl['commentaire'] : "Déclaration en attente",
+                'commentaire'     => $commentaireAffiche,
                 'is_range'        => true,
                 'has_file'        => !empty($decl['nom_fichier_original']),
+                'can_upload'      => ($statut === 'En révision') // Permet de renvoyer un fichier
             ];
         }
 
@@ -355,30 +362,31 @@ final class AbsenceModel
 
     public static function getPendingRangeJustifications(int $userId): array
     {
-
         $pdo = db();
         $sql = "
-            SELECT 
-                j.id AS justificatif_id,
-                j.date_debut_demande AS date_debut,
-                j.date_fin_demande AS date_fin,
-                j.motif_libre AS raison_demande,
-                j.commentaire,
-                hd.action AS last_action 
-            FROM Justificatif j
-            JOIN HistoriqueDecision hd ON hd.id_justificatif = j.id
-            WHERE j.id_utilisateur = :uid
-            AND hd.action = 'SOUMISSION' 
-            AND NOT EXISTS (SELECT 1 FROM JustificatifAbsence ja WHERE ja.id_justificatif = j.id)
-            ORDER BY j.date_debut_demande DESC;
-        ";
-
+        SELECT 
+            j.id AS justificatif_id,
+            j.date_debut_demande AS date_debut,
+            j.date_fin_demande AS date_fin,
+            j.motif_libre AS raison_demande,
+            j.commentaire,
+            hd.action AS last_action 
+        FROM Justificatif j
+        JOIN HistoriqueDecision hd ON hd.id_justificatif = j.id
+        WHERE j.id_utilisateur = :uid
+          AND j.date_debut_demande IS NOT NULL
+          -- On récupère la DERNIÈRE action
+          AND hd.id = (
+              SELECT MAX(id) FROM HistoriqueDecision WHERE id_justificatif = j.id
+          )
+          -- On affiche si c'est en attente (SOUMISSION) ou en révision (DEMANDE_PRECISIONS)
+          AND hd.action IN ('SOUMISSION', 'DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI')
+        ORDER BY j.date_debut_demande DESC;
+    ";
         $st = $pdo->prepare($sql);
         $st->execute([':uid' => $userId]);
-
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }
-
 
     public static function logRpDecision(int $justifId, int $rpId, string $action, string $motif): bool
     {
@@ -463,5 +471,41 @@ final class AbsenceModel
     {
 
         return [];
+    }
+    public static function updateJustificatif($justifId, $userId, $name, $mime, $content): bool
+    {
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            // 1. Mise à jour du fichier et déverrouillage
+            $st = $pdo->prepare("
+            UPDATE Justificatif 
+            SET fichier = decode(:f, 'base64'), 
+                nom_fichier_original = :n, 
+                type_mime = :m, 
+                verouille = TRUE,
+                verouille_date = NOW()
+            WHERE id = :id AND id_utilisateur = :u
+        ");
+            $st->bindValue(':f', base64_encode($content), \PDO::PARAM_STR);
+            $st->bindValue(':n', $name, \PDO::PARAM_STR);
+            $st->bindValue(':m', $mime, \PDO::PARAM_STR);
+            $st->bindValue(':id', $justifId, \PDO::PARAM_INT);
+            $st->bindValue(':u', $userId, \PDO::PARAM_INT);
+            $st->execute();
+
+            // 2. Ajouter une ligne dans l'historique pour signaler le renvoi
+            $st2 = $pdo->prepare("
+            INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision)
+            VALUES ('SOUMISSION', :j, :u, 'Nouveau fichier transmis après révision')
+        ");
+            $st2->execute([':j' => $justifId, ':u' => $userId]);
+
+            $pdo->commit();
+            return true;
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            return false;
+        }
     }
 }

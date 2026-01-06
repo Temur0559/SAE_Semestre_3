@@ -17,8 +17,7 @@ class IndexPresenter {
 
     public function handle() {
 
-        // session_start() a été déplacé dans index.php
-        // recup toutes les absences + dernier justificatif + dernière décision
+
         $rowsAll = $this->model->AbsencesDetails();
         $filtreNom    = trim($_GET['nom'] ?? '');
         $filtrePrenom = trim($_GET['prenom'] ?? '');
@@ -54,12 +53,13 @@ class IndexPresenter {
 
         }
 
-        // sélection d'une absence
-        $idAbs = isset($_GET['abs']) ? (int)$_GET['abs'] : 0;
+        // sélection d'un justificatif (au lieu de l'absence pour gérer les plages)
+        $idJustif = isset($_GET['justif']) ? (int)$_GET['justif'] : 0;
         $selected = null;
 
         foreach ($justificatifsFiltres as $ligne) {
-            if ($ligne['absence_id'] === $idAbs) {
+            // On compare l'ID du justificatif
+            if ((int)$ligne['id'] === $idJustif) {
                 $selected = $ligne;
                 break;
             }
@@ -70,7 +70,6 @@ class IndexPresenter {
             $details = $this->model->detailsJustificatif($selected['id' ]);
         }
 
-        // CORRECTION DE LA LIGNE 63 : Changement de 'IndexView.php' à 'index.php'
         require_once __DIR__ . '/../View/index.php';
         $view = new IndexView();
         $view->render($justificatifsFiltres, $compteurs, $ongletActif, $selected, $details);

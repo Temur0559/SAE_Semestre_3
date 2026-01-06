@@ -243,11 +243,18 @@ class IndexView {
                     </thead>
                     <tbody>
                     <?php foreach ($justificatifs as $ligne):
-                        $activeRow = (!empty($_GET['abs']) && (int)$ligne['absence_id'] === (int)$_GET['abs']) ? 'row-active' : '';
+
+                        $activeRow = (!empty($_GET['justif']) && (int)$ligne['id'] === (int)$_GET['justif']) ? 'row-active' : '';
                         ?>
-                        <tr class="<?=$activeRow?>" style="cursor:pointer;" onclick="window.location.href='index.php?ongletActif=<?=$ongletActif?>&abs=<?=$ligne['absence_id']?>'">
+                        <tr class="<?=$activeRow?>" style="cursor:pointer;" onclick="window.location.href='index.php?ongletActif=<?=$ongletActif?>&justif=<?=$ligne['id']?>'">
                             <td><?=propre($ligne['etu_prenom'].' '.$ligne['etu_nom'])?></td>
-                            <td><?=fr_date($ligne['cours_date'])?></td>
+                            <td>
+                                <?php if (!empty($ligne['cours_date'])): ?>
+                                    <?= fr_date($ligne['cours_date']) ?>
+                                <?php else: ?>
+                                    Du <?= fr_date($ligne['date_debut_demande']) ?> au <?= fr_date($ligne['date_fin_demande']) ?>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="status-badge <?=couleur($ongletActif)?>"><?=statut_label($ongletActif)?></span></td>
                         </tr>
                     <?php endforeach; ?>

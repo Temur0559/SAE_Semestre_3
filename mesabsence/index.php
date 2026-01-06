@@ -37,16 +37,27 @@ if ($ok === 'justif_sent') {
 
 $transformedRanges = [];
 foreach ($pendingRanges as $range) {
+    $action = $range['last_action'] ?? '';
+
+    // Détermination précise du statut
+    if (in_array($action, ['DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI'])) {
+        $statutEtudiant = 'En révision';
+        $canUpload = true;
+    } else {
+        $statutEtudiant = 'En attente';
+        $canUpload = false;
+    }
 
     $transformedRanges[] = [
-        'absence_id' => null,
-        'date' => 'Du ' . $range['date_debut'] . ' au ' . $range['date_fin'],
-        'motif' => 'Déclaration: ' . $range['raison_demande'],
+        'absence_id'      => 0,
+        'date'            => 'Du ' . $range['date_debut'] . ' au ' . $range['date_fin'],
+        'motif'           => 'DÉCLARATION : ' . ($range['raison_demande'] ?? 'Absence déclarée'),
         'justificatif_id' => (int)$range['justificatif_id'],
-        'statut' => 'En attente',
-        'commentaire' => $range['commentaire'],
-        'can_upload' => false,
-        'is_range' => true,
+        'statut'          => $statutEtudiant,
+        'commentaire'     => $range['commentaire'] ?? '',
+        'can_upload'      => $canUpload,
+        'is_range'        => true,
+        'has_file'        => true
     ];
 }
 
