@@ -65,7 +65,19 @@ final class StatistiquesModel
     {
         $pdo = db();
         $queryData = self::buildWhereClause($startDate, $endDate, $studentId, $typeSeance, $programmeId, null);
-        $sql = "SELECT e.code AS ressource_code, e.libelle AS ressource_libelle, COUNT(a.id) AS total_absences FROM absence a JOIN seance s ON s.id = a.id_seance JOIN enseignement e ON e.id = s.id_enseignement {$queryData['where']} GROUP BY e.code, e.libelle ORDER BY total_absences DESC;";
+
+
+        $sql = "SELECT e.code AS ressource_code, 
+                   e.libelle AS ressource_libelle, 
+                   s.type AS type_seance, 
+                   COUNT(a.id) AS total_absences 
+            FROM absence a 
+            JOIN seance s ON s.id = a.id_seance 
+            JOIN enseignement e ON e.id = s.id_enseignement 
+            {$queryData['where']} 
+            GROUP BY e.code, e.libelle, s.type 
+            ORDER BY total_absences DESC;";
+
         $st = $pdo->prepare($sql);
         $st->execute($queryData['params']);
         return $st->fetchAll(\PDO::FETCH_ASSOC);

@@ -23,16 +23,7 @@ if ($type_seance === '') $type_seance = null;
 
 $enseignement_id = isset($_GET['enseignement_id']) && $_GET['enseignement_id'] !== '' ? (int)$_GET['enseignement_id'] : null;
 
-if ($periode_rapide === 'S3') {
-    $start_date = '2025-09-01';
-    $end_date = '2026-01-31';
-} elseif ($periode_rapide === 'S4') {
-    $start_date = '2026-02-01';
-    $end_date = '2026-06-30';
-} elseif ($periode_rapide === 'ANN') {
-    $start_date = '2025-09-01';
-    $end_date = date('Y-m-d');
-}
+
 
 if (isset($_GET['start_date']) && $_GET['start_date'] !== '') {
     $start_date = $_GET['start_date'];

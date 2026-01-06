@@ -6,13 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="Correction de bug">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Model/JustificatifInfosModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Model/JustificatifInfosModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/Presenter/IndexPresenter.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/Presenter/IndexPresenter.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/equipe_pedag/View/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/equipe_pedag/View/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/View/liste.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/index.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/upload.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/upload.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Statistiques/Model/StatistiquesModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/Statistiques/Model/StatistiquesModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Statistiques/View/statistiques_etudiant.php" beforeDir="false" afterPath="$PROJECT_DIR$/Statistiques/View/statistiques_etudiant.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Statistiques/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/Statistiques/index.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -208,7 +204,7 @@
       <workItem from="1766846851504" duration="88000" />
       <workItem from="1767536732100" duration="6701000" />
       <workItem from="1767647234898" duration="7154000" />
-      <workItem from="1767721122449" duration="3818000" />
+      <workItem from="1767721122449" duration="4722000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -314,7 +310,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767655561259</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Correction de bug">
+      <option name="closed" value="true" />
+      <created>1767725239280</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1767725239280</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

@@ -603,36 +603,9 @@ $role = htmlspecialchars($_SESSION['role'] ?? 'RESPONSABLE', ENT_QUOTES, 'UTF-8'
                     </div>
                 </div>
 
-                <div class="filter-group" style="grid-column: span 2;">
-                    <label for="enseignement_id">Filtre Cours/Ressource (Détails):</label>
-                    <select id="enseignement_id" name="enseignement_id" onchange="this.form.submit()">
-                        <option value="">Toutes Ressources</option>
-                        <?php foreach ($enseignements as $ens): ?>
-                            <option value="<?= $ens['id']; ?>" <?= (int)$enseignement_id === (int)$ens['id'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($ens['code'] . ' - ' . $ens['libelle']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+
             </div>
 
-            <div class="filter-group full-width">
-                <label>Période Rapide:</label>
-                <div class="period-buttons">
-                    <button type="submit" name="periode_rapide" value="S3" class="<?= $periode_rapide === 'S3' ? 'active' : ''; ?>">
-                        Semestre S3
-                    </button>
-                    <button type="submit" name="periode_rapide" value="S4" class="<?= $periode_rapide === 'S4' ? 'active' : ''; ?>">
-                        Semestre S4
-                    </button>
-                    <button type="submit" name="periode_rapide" value="ANN" class="<?= $periode_rapide === 'ANN' ? 'active' : ''; ?>">
-                        Année en cours
-                    </button>
-                    <button type="submit" name="periode_rapide" value="" class="<?= $periode_rapide === '' || $periode_rapide === null ? 'active' : ''; ?>">
-                        Toutes périodes
-                    </button>
-                </div>
-            </div>
 
             <div class="container-stats">
                 <div class="filter-group" style="flex: 1; margin-bottom: 0;">
@@ -756,7 +729,8 @@ $role = htmlspecialchars($_SESSION['role'] ?? 'RESPONSABLE', ENT_QUOTES, 'UTF-8'
     new Chart(document.getElementById('absencesByRessourceChart'), {
         type: 'doughnut',
         data: {
-            labels: dataByRessource.map(item => item.ressource_code + ' - ' + item.ressource_libelle),
+            // Modification ici : on ajoute le type de séance entre parenthèses
+            labels: dataByRessource.map(item => item.ressource_code + ' - ' + item.ressource_libelle + ' (' + item.type_seance + ')'),
             datasets: [{
                 data: dataByRessource.map(item => item.total_absences),
                 backgroundColor: generateColors(dataByRessource.length),
