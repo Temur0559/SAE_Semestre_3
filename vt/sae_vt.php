@@ -1067,6 +1067,40 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
             border: 1px dashed #ccc;
             border-radius: 8px;
         }
+        /* Style pour le message de chargement */
+        #loading-overlay {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 121, 138, 0.1);
+            border-radius: 10px;
+            border: 1px solid var(--uphf-blue-light);
+            color: var(--uphf-blue-dark);
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: var(--uphf-blue-light);
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Désactiver le bouton pendant le chargement */
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -1087,10 +1121,15 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
     <?php if ($etat === 'attente'): ?>
         <h1>Importation VT</h1>
         <p style="text-align:center; color:#666; margin-bottom:15px;">Sélectionnez le fichier CSV pour synchroniser les présences.</p>
-        <form method="post" enctype="multipart/form-data">
+
+        <form method="post" enctype="multipart/form-data" id="import-form">
             <input type="file" name="csv" accept=".csv" required>
             <br><br>
-            <button class="btn" type="submit">🚀 Lancer l'importation</button>
+            <button class="btn" type="submit" id="submit-btn">Lancer l'importation</button>
+
+            <div id="loading-overlay" style="display: none; text-align: center; margin-top: 15px; padding: 15px; background: rgba(0, 121, 138, 0.1); border-radius: 10px; color: #004085;">
+                <div class="spinner"></div> <span>Traitement en cours... Merci de ne pas fermer cette page.</span>
+            </div>
         </form>
 
     <?php elseif ($etat === 'succes'): ?>
@@ -1125,7 +1164,19 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
             <a href="sae_vt.php" class="btn">Réessayer</a>
         </div>
     <?php endif; ?>
-</div>
+</div> <script>
+    document.getElementById('import-form').addEventListener('submit', function() {
+        const btn = document.getElementById('submit-btn');
+        const loader = document.getElementById('loading-overlay');
+
+        // Désactiver le bouton pour éviter le double clic
+        btn.disabled = true;
+        btn.innerText = "⏳ Importation en cours...";
+
+        // Afficher l'indicateur de chargement
+        loader.style.display = 'block';
+    });
+</script>
 
 </body>
 </html>

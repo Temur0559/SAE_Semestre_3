@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="amélioration des statistiques">
+    <list default="true" id="8d200657-e924-4594-a665-1460dec3f272" name="Changes" comment="test et modification">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.phpunit.result.cache" beforeDir="false" afterPath="$PROJECT_DIR$/.phpunit.result.cache" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesabsence/View/liste_en.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/View/liste_en.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/AbsenceTest.php" beforeDir="false" afterPath="$PROJECT_DIR$/tests/AbsenceTest.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" beforeDir="false" afterPath="$PROJECT_DIR$/mesabsence/Model/AbsenceModel.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vt/sae_vt.php" beforeDir="false" afterPath="$PROJECT_DIR$/vt/sae_vt.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,35 +96,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "JavaScript Debug.index.php.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "PHP Script.UserModel.php.executor": "Run",
-    "PHP Script.dashboard_enseignant.php.executor": "Run",
-    "PHP Script.diag_find.php.executor": "Run",
-    "PHP Script.index.php.executor": "Run",
-    "PHP Script.temp.php.executor": "Run",
-    "PHPUnit.AbsenceTest.executor": "Run",
-    "PHPUnit.AuthenticationTest.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "sprint/sprint-1",
-    "ignore.virus.scanning.warn.message": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/users/info/temur.usupovi/PhpstormProjects/untitled3",
-    "list.type.of.created.stylesheet": "CSS",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;JavaScript Debug.index.php.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;PHP Script.UserModel.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHP Script.dashboard_enseignant.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHP Script.diag_find.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHP Script.index.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHP Script.temp.php.executor&quot;: &quot;Run&quot;,
+    &quot;PHPUnit.AbsenceTest.executor&quot;: &quot;Run&quot;,
+    &quot;PHPUnit.AuthenticationTest.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;sprint/sprint-1&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/users/info/temur.usupovi/PhpstormProjects/untitled3&quot;,
+    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -205,7 +204,8 @@
       <workItem from="1766846851504" duration="88000" />
       <workItem from="1767536732100" duration="6701000" />
       <workItem from="1767647234898" duration="7154000" />
-      <workItem from="1767721122449" duration="8816000" />
+      <workItem from="1767721122449" duration="9469000" />
+      <workItem from="1767768478034" duration="1312000" />
     </task>
     <task id="LOCAL-00001" summary="Liaison des pages pour l’étudiant lors de la connexion et ajout de la synchronisation VT.">
       <option name="closed" value="true" />
@@ -327,7 +327,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767726111600</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="test et modification">
+      <option name="closed" value="true" />
+      <created>1767730251108</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1767730251108</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -356,6 +364,7 @@
     <MESSAGE value="Ajout des statistiques et liaison de toutes les pages entre eux." />
     <MESSAGE value="Correction de bug" />
     <MESSAGE value="amélioration des statistiques" />
-    <option name="LAST_COMMIT_MESSAGE" value="amélioration des statistiques" />
+    <MESSAGE value="test et modification" />
+    <option name="LAST_COMMIT_MESSAGE" value="test et modification" />
   </component>
 </project>
