@@ -35,11 +35,12 @@ class JustificatifDetailPresenter {
         }
 
         $historiquedetail = $this->detailHistoriqueModel->detailParJustificatif($id);
+        $listeAbsence = $this->model->detailsJustificatif($id);
 
         // affiche la vue
         require __DIR__ . '/../view/JustificatifDetailView.php';
         $vue = new JustificatifDetailView();
-        $vue->render($justif, $historiquedetail);
+        $vue->render($justif, $historiquedetail, $listeAbsence);
 
 
     }

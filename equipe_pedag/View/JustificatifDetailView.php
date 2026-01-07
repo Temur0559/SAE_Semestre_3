@@ -22,7 +22,7 @@ class JustificatifDetailView {
         };
     }
 
-    public function render(array $justif, array $historique){
+    public function render(array $justif, array $historique, array $listAbsence){
         if (empty($historique)) {
             echo "<p>Aucune action enregistré pour ce justificatif.</p>";
             return;
@@ -59,8 +59,26 @@ class JustificatifDetailView {
         </p>
 
         <p>
-            <strong>Date de l'absence :</strong>
-            <?= $this->fr_date($historique[0]['date_seance'] ?? null) ?>
+            <strong>Date des absences :</strong>
+        <div class="table-wrapper">
+            <table class="justif-table table-scroll">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Heure</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                <?php foreach ($listAbsence as $d): ?>
+                    <tr>
+                        <td><?= $this->fr_date($d['date']) ?></td>
+                        <td><?= $this->fr_hm($d['heure']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         </p>
 
         <table>
