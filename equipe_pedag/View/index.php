@@ -168,6 +168,10 @@ class IndexView {
                 .primary { background: var(--uphf-blue-light); }
                 .danger { background: var(--danger-color); }
                 .neutral { background: #6c757d; }
+
+                .table-wrapper {
+                    max-height: 300px; overflow-y: auto;
+                }
             </style>
         </head>
         <body>
@@ -269,8 +273,6 @@ class IndexView {
                         <h3>Détails du justificatif</h3>
                         <p style="color:#888; font-size:0.9em;">
                             <strong>ID justificatif :</strong> <?= $selected['id'] ?>
-                            —
-                            <strong>ID absence :</strong> <?= $selected['absence_id'] ?>
                         </p>
 
                         <div style="margin 15px 0; padding: 10px; background: #eef6ff; border-left:4px solid #007bff;">
@@ -311,28 +313,40 @@ class IndexView {
                         <?php if (!empty($details)): ?>
                             <div style="margin-top:20px;">
                                 <h4>Cours concernés par le justificatif</h4>
-
-                                <table class="justif-table">
-                                    <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Heure</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php foreach ($details as $d): ?>
+                                <div class="table-wrapper">
+                                    <table class="justif-table table-scroll">
+                                        <thead>
                                         <tr>
-                                            <td><?= fr_date($d['date']) ?></td>
-                                            <td><?= fr_heure($d['heure']) ?></td>
+                                            <th>Date</th>
+                                            <th>Heure</th>
+                                            <th>
+                                                <div style="display: flex; flex-direction: row; justify-content: space-between">
+                                                    <p>Sélectionner</p>
+                                                    <input type="checkbox" id="check-all"/>
+                                                </div>
+                                            </th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+
+                                        <?php foreach ($details as $d): ?>
+                                            <tr>
+                                                <td><?= fr_date($d['date']) ?></td>
+                                                <td><?= fr_heure($d['heure']) ?></td>
+                                                <td>
+                                                    <div style="display: flex; flex-direction: row; justify-content: end">
+                                                        <input name="selectionner[]" class="check-abs" style="margin-left: auto" type="checkbox" value="<?= $d['absence_id'] ?>">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         <?php endif; ?>
 
                         <p><strong>Étudiant :</strong> <?=propre($selected['etu_prenom'].' '.$selected['etu_nom'])?></p>
-                        <p><strong>Absence :</strong> le <?=fr_date($selected['cours_date'])?> à <?=fr_heure($selected['cours_heure'])?></p>
 
                         <div style="margin: 20px 0;">
                             <a href="index.php?page=fichier_justificatif&id=<?=$selected['id']?>" target="_blank" style="color: var(--uphf-blue-light); font-weight: bold;">
@@ -341,7 +355,7 @@ class IndexView {
                         </div>
 
                         <div class="detail-actions">
-                            <form method="post" action="index.php?page=traiter_action" class="stack">
+                            <form method="post" action="index.php?page=traiter_action" class="stack" id="form-traiter-action">
                                 <input type="hidden" name="id" value="<?= $selected['id'] ?>">
 
                                 <label><strong>Motif de l’acceptation</strong></label>
@@ -366,7 +380,7 @@ class IndexView {
                             </form>
 
 
-                            <form method="post" action="index.php?page=rejet" class="stack">
+                            <form method="post" action="index.php?page=traiter_action" class="stack" id="form-rejet">
                                 <input type="hidden" name="id" value="<?= $selected['id'] ?>">
                                 <label><strong>Motif du rejet</strong></label>
                                 <select name="motifDecision" class="inp" required>
@@ -393,7 +407,36 @@ class IndexView {
                 <?php endif; ?>
             </section>
         </div>
+        <script>
+            // Script pour cocher/décocher l'intégralité des absences
+            const toutCocher = document.getElementById('check-all');
+            const listeSeance = document.querySelectorAll('.check-abs');
 
+            toutCocher.addEventListener('click', () => {
+                listeSeance.forEach((c) => {
+                    c.checked = toutCocher.checked;
+                })
+            })
+
+            // Envoyer le choix des cours sélectionnés
+            const formulaireAccepter = document.getElementById('form-traiter-action');
+            const formulaireRefuser = document.getElementById('form-rejet');
+
+            function cloneCheckboxes(form) {
+                listeSeance.forEach(cb => {
+                    if(cb.checked) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = cb.name;
+                        input.value = cb.value;
+                        form.appendChild(input);
+                    }
+                });
+            }
+
+            formulaireAccepter.addEventListener('submit', () => cloneCheckboxes(formulaireAccepter));
+            formulaireRefuser.addEventListener('submit', () => cloneCheckboxes(formulaireRefuser));
+        </script>
         </body>
         </html>
         <?php

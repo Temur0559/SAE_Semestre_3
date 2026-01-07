@@ -22,17 +22,12 @@ class JustificatifInfosModel {
             FROM HistoriqueDecision
             ORDER BY HistoriqueDecision.id_justificatif, HistoriqueDecision.date_action DESC, HistoriqueDecision.id DESC
         )
-        SELECT 
-            Absence.id AS absence_id,
+        SELECT DISTINCT 
             Utilisateur.id AS etudiant_id,
             Utilisateur.identifiant AS etu_identifiant,
             Utilisateur.nom AS etu_nom,
             Utilisateur.prenom AS etu_prenom,
             Utilisateur.date_naissance,
-
-            Seance.date AS cours_date,
-            Seance.heure AS cours_heure,
-            (Seance.date + Seance.heure::interval + Seance.duree) AS cours_fin,
 
             Justificatif.id AS id,
             Justificatif.nom_fichier_original,
@@ -48,13 +43,14 @@ class JustificatifInfosModel {
 
         FROM Justificatif
         JOIN Utilisateur ON Utilisateur.id = Justificatif.id_utilisateur
-        FULL OUTER JOIN JustificatifAbsence ON Justificatif.id = JustificatifAbsence.id_justificatif
-        FULL OUTER JOIN Absence ON Absence.id = JustificatifAbsence.id_absence
-        LEFT JOIN Seance ON Seance.id = Absence.id_seance
-        LEFT JOIN derniere_decision ON derniere_decision.id_justificatif = Justificatif.id
+        JOIN JustificatifAbsence ON Justificatif.id = JustificatifAbsence.id_justificatif
+        JOIN derniere_decision ON derniere_decision.id_justificatif = Justificatif.id
+        
+        WHERE Justificatif.date_debut_demande IS NOT NULL AND 
+            Justificatif.date_fin_demande IS NOT NULL
         
         ORDER BY 
-            COALESCE(Seance.date, Justificatif.date_debut_demande) DESC NULLS LAST, 
+            Justificatif.date_debut_demande DESC NULLS LAST, 
             Justificatif.id DESC
         ";
 
@@ -88,9 +84,9 @@ class JustificatifInfosModel {
         FROM Justificatif j
         JOIN Utilisateur u ON u.id = j.id_utilisateur
 
-        LEFT JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
-        LEFT JOIN Absence a ON a.id = ja.id_absence
-        LEFT JOIN Seance s 
+        JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
+        JOIN Absence a ON a.id = ja.id_absence
+        JOIN Seance s 
             ON s.id = a.id_seance
             AND s.date BETWEEN j.date_debut_demande AND j.date_fin_demande
 

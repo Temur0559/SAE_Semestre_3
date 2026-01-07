@@ -7,6 +7,7 @@ require_once __DIR__ . '/Presenter/IndexPresenter.php';
 
 require_role('RESPONSABLE');
 
+
 $pdo = db();
 $page = $_GET['page'] ?? 'index';
 

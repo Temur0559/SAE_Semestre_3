@@ -267,7 +267,7 @@ class HistoriqueView {
                                             <input type="hidden" name="id" value="<?=$r['justif_id']?>">
                                             <input type="hidden" name="redirect" value="<?=htmlspecialchars($_SERVER['REQUEST_URI'])?>">
                                             <input type="text" name="motif" placeholder="Nouveau motif..." style="flex-grow:1; padding:5px;">
-                                            <button class="btn-small neutral" name="action" value="SOUMISSION">En attente</button>
+                                            <!-- en cas de test : <button class="btn-small neutral" name="action" value="SOUMISSION">En attente</button> -->
                                             <button class="btn-small primary" name="action" value="ACCEPTATION">Accepter</button>
                                             <button class="btn-small danger" name="action" value="REJET">Rejeter</button>
                                         </form>

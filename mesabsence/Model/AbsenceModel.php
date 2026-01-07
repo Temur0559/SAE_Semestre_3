@@ -188,35 +188,45 @@ final class AbsenceModel
 
 
         foreach ($declarations as $decl) {
+            $lastAction = $decl['last_action'] ?? 'SOUMISSION';
 
-            if (in_array($decl['last_action'], ['ACCEPTATION', 'REJET'])) {
-                continue;
+            // Récupérer toutes les absences liées à ce justificatif
+            $stmtAbs = db()->prepare("
+        SELECT a.id AS absence_id, s.date, s.heure, s.duree, a.motif AS motif_court, a.justification AS db_justification_status
+        FROM JustificatifAbsence ja
+        JOIN Absence a ON a.id = ja.id_absence
+        JOIN Seance s ON s.id = a.id_seance
+        WHERE ja.id_justificatif = :jid
+        ORDER BY s.date, s.heure
+    ");
+            $stmtAbs->execute([':jid' => $decl['justificatif_id']]);
+            $absences = $stmtAbs->fetchAll(PDO::FETCH_ASSOC);
+
+            // Déterminer le statut global du justificatif
+            $statut = match($lastAction) {
+                'ACCEPTATION' => 'Accepté',
+                'REJET' => 'Rejeté',
+                'DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI' => 'En révision',
+                default => 'En attente'
+            };
+
+            $commentaireAffiche = $decl['commentaire'] ?: ($statut === 'En révision' ? "Précisions demandées" : "Déclaration en attente");
+
+            foreach ($absences as $abs) {
+                $out[] = [
+                    'absence_id' => (int)$abs['absence_id'],
+                    'date' => $abs['date'],
+                    'motif' => $abs['motif_court'] ?: ($decl['raison_demande'] ?? ''),
+                    'justificatif_id' => (int)$decl['justificatif_id'],
+                    'statut' => $statut,
+                    'commentaire' => $commentaireAffiche,
+                    'is_range' => false,
+                    'has_file' => !empty($decl['nom_fichier_original']),
+                    'can_upload' => ($statut === 'En révision'),
+                ];
             }
-
-            $dateRange = $decl['date_debut'] . ' → ' . $decl['date_fin'];
-
-            // Déterminer le statut exact pour l'étudiant
-            $action = $decl['last_action'];
-            $statut = 'En attente';
-            if (in_array($action, ['DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI'])) {
-                $statut = 'En révision';
-            }
-
-            $motifDisplay = 'DÉCLARATION : ' . ($decl['raison_demande'] ?? 'Absence déclarée');
-            $commentaireAffiche = !empty($decl['commentaire']) ? $decl['commentaire'] : ($statut === 'En révision' ? "Précisions demandées" : "Déclaration en attente");
-
-            $out[] = [
-                'absence_id'      => 0,
-                'date'            => $dateRange,
-                'motif'           => $motifDisplay,
-                'justificatif_id' => (int)$decl['justificatif_id'],
-                'statut'          => $statut,
-                'commentaire'     => $commentaireAffiche,
-                'is_range'        => true,
-                'has_file'        => !empty($decl['nom_fichier_original']),
-                'can_upload'      => ($statut === 'En révision') // Permet de renvoyer un fichier
-            ];
         }
+
 
         return $out;
     }

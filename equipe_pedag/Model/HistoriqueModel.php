@@ -70,7 +70,7 @@ class HistoriqueModel {
 
         list($where, $params) = $this->construireFiltres($filtrerTexte, $filtrerDecision, $filtrerDate1, $filtrerDate2);
 
-        $sql = " SELECT hd.id, hd.date_action, hd.action, hd.motif_decision, j.id AS justif_id, j.nom_fichier_original,j.date_soumission, j.date_debut_demande, j.date_fin_demande, u.id AS etu_id,u.prenom AS etu_prenom,u.nom AS etu_nom,s.date AS date_seance, s.heure AS cours_heure
+        $sql = " SELECT hd.id, hd.date_action, hd.action, hd.motif_decision, j.id AS justif_id, j.nom_fichier_original,j.date_soumission, j.date_debut_demande, j.date_fin_demande, u.id AS etu_id,u.prenom AS etu_prenom,u.nom AS etu_nom
  FROM (
  SELECT hd.id, hd.id_justificatif, hd.action, hd.date_action, hd.motif_decision
  FROM HistoriqueDecision hd
@@ -83,6 +83,9 @@ LEFT JOIN Absence a ON a.id = ja.id_absence
 LEFT JOIN Seance s ON s.id = a.id_seance
 
 $where
+GROUP BY hd.id, hd.date_action, hd.action, hd.motif_decision, j.id, j.nom_fichier_original, j.date_soumission, j.date_debut_demande, j.date_fin_demande, u.id, u.prenom, u.nom
+
+
 ORDER BY hd.date_action DESC
 LIMIT :lim OFFSET :off";
         $stmt = $this->pdo->prepare($sql);
