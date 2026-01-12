@@ -38,60 +38,28 @@ final class AbsenceModel
 
     public static function getAbsencesForStudent($userId, $filtre )
     {
-        $sql = "
-      SELECT
+        $sql = "SELECT
           a.id AS absence_id,
           s.date,
           a.motif AS motif_court,
           a.commentaire AS last_comment,
-          a.justification AS db_justification_status, 
-          
-          
-          (
-              SELECT ja.id_justificatif
-              FROM JustificatifAbsence ja
-              JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-              WHERE ja.id_absence = a.id
-              ORDER BY hd.date_action DESC, hd.id DESC
-              LIMIT 1
-          ) AS justificatif_id,
-          
-          
-          (
-              SELECT hd.action
-              FROM JustificatifAbsence ja
-              JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-              WHERE ja.id_absence = a.id
-              ORDER BY hd.date_action DESC, hd.id DESC
-              LIMIT 1
-          ) AS last_action,
-          
-          
-          (
-              SELECT hd.motif_decision
-              FROM JustificatifAbsence ja
-              JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-              WHERE ja.id_absence = a.id
-              ORDER BY hd.date_action DESC, hd.id DESC
-              LIMIT 1
-          ) AS motif_decision_historique,
-          
-          
-          (
-              SELECT j.verouille
-              FROM Justificatif j
-              JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
-              WHERE ja.id_absence = a.id
-              ORDER BY j.date_soumission DESC
-              LIMIT 1
-          ) AS verouille_status
-          
+          a.justification AS db_justification_status
       FROM Absence a
       JOIN Seance s ON s.id = a.id_seance
       JOIN Enseignement e ON e.id = s.id_enseignement
-      WHERE a.id_utilisateur = :uid
-      ORDER BY s.date DESC, a.id DESC
-    ";
+      WHERE a.id_utilisateur = :uid AND NOT EXISTS (
+    SELECT 1
+    FROM JustificatifAbsence ja
+    JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+    WHERE ja.id_absence = a.id
+    AND hd.id = (
+        SELECT MAX(hd2.id)
+        FROM HistoriqueDecision hd2
+        WHERE hd2.id_justificatif = ja.id_justificatif
+    )
+    AND hd.action IN ('SOUMISSION', 'ACCEPTATION')
+)
+      ORDER BY s.date DESC, a.id DESC";
         $st = db()->prepare($sql);
         $st->execute([':uid' => $userId]);
         $rows = $st->fetchAll();
@@ -99,115 +67,113 @@ final class AbsenceModel
 
         // TRAITER LES ABSENCES NORMALES
         foreach ($rows as $r) {
-            $lastAction = $r['last_action'];
-            $justificatifId = $r['justificatif_id'];
             $dbStatus = $r['db_justification_status'];
-            $motifDecisionHistorique  = $r['motif_decision_historique'];
-            $verouilleStatus = $r['verouille_status'];
 
             $statut = 'Inconnu';
-            $commentaireAfficher = $r['last_comment'];
+            $commentaireAfficher;
 
 
-            if ($lastAction === 'ACCEPTATION') {
+            if ($dbStatus === 'JUSTIFIEE') {
                 $statut = 'Accepté';
-                $commentaireAfficher = "Justifié : " . $motifDecisionHistorique;
-            } elseif ($lastAction === 'REJET') {
-                $statut = 'Rejeté';
-                $commentaireAfficher = "Rejeté : " . $motifDecisionHistorique;
-            } elseif (in_array($lastAction, ['DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI'], true)) {
-                $statut = 'En révision';
-                $commentaireAfficher = "Précisions demandées : " . $motifDecisionHistorique;
-            } elseif ($lastAction === 'SOUMISSION' || $dbStatus === 'INCONNU' || $dbStatus === 'NON_JUSTIFIEE') {
-                $statut = 'En attente';
-                $commentaireAfficher = $lastAction === 'SOUMISSION' ? "Soumis : Traitement en cours." : $commentaireAfficher;
+                $commentaireAfficher = "";
+            } else {
+                $statut = 'Non justifié';
+                $commentaireAfficher = $r['last_comment'];
             }
-
-
-            $canUpload = false;
-
-            // CAS 1 : Actions qui déverrouillent (demande de révision, etc.)
-            if (in_array($lastAction, ['DEMANDE_PRECISIONS', 'RENVOI_FICHIER', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI'], true)) {
-                $canUpload = true;
-            }
-
-            // CAS 2 : Première soumission (jamais de justificatif envoyé)
-            if ($justificatifId === null && $lastAction === null && $dbStatus === 'NON_JUSTIFIEE') {
-                $canUpload = true;
-            }
-
-            // CAS 3 : Bloqué si verrouillé
-            if ($verouilleStatus === 't') {
-                $canUpload = false;
-            }
-
-            // CAS 4 : Bloqué si justificatif en attente (SOUMISSION)
-            if ($lastAction === 'SOUMISSION') {
-                $canUpload = false;
-            }
-
 
             $f = strtolower($filtre ?: 'tous');
             $s = strtolower($statut);
             if ($f !== 'tous' && strpos($s, $f) === false) continue;
 
             $out[] = [
-                'absence_id'      => (int)$r['absence_id'],
-                'date'            => (string)$r['date'],
-                'motif'           => (string)$r['motif_court'],
-                'justificatif_id' => $justificatifId ? (int)$justificatifId : null,
-                'statut'          => $statut,
-                'commentaire'     => $commentaireAfficher,
-                'can_upload'      => (bool)$canUpload,
-                'is_range'        => false,
+                'absence_id' => (int)$r['absence_id'],
+                'date' => (string)$r['date'],
+                'motif' => (string)$r['motif_court'],
+                'files_id' => NULL,
+                'statut' => $statut,
+                'commentaire' => $commentaireAfficher,
+                'can_upload' => false,
+                'is_range' => false,
             ];
         }
 
         // AJOUTER LES DÉCLARATIONS (justificatifs de plage)
         $pdo = db();
         $sql_decl = "
-    SELECT 
-        j.id AS justificatif_id,
-        j.date_debut_demande AS date_debut,
-        j.date_fin_demande AS date_fin,
-        j.motif_libre AS raison_demande,
-        j.commentaire,
-        j.nom_fichier_original, -- AJOUTÉ : Pour vérifier la présence d'un fichier
-        (SELECT hd.action FROM HistoriqueDecision hd 
-         WHERE hd.id_justificatif = j.id 
-         ORDER BY hd.date_action DESC LIMIT 1) as last_action,
-        (SELECT COUNT(*) FROM JustificatifAbsence ja WHERE ja.id_justificatif = j.id) as nb_absences_liees
-    FROM Justificatif j
-    WHERE j.id_utilisateur = :uid
-    AND j.date_debut_demande IS NOT NULL
-    ORDER BY j.date_debut_demande DESC
-";
+        WITH derniere_decision AS (
+            SELECT DISTINCT ON (id_justificatif)
+                id_justificatif, action, motif_decision
+            FROM HistoriqueDecision
+            ORDER BY id_justificatif, date_action DESC, id DESC
+        )
+        SELECT
+            j.id as main_id,
+            j.date_debut_demande,
+            j.date_fin_demande,
+            j.motif_libre,
+            j.commentaire,
+            jh.action AS last_action,
+            jh.motif_decision,
+            (
+                SELECT ARRAY_AGG(id)
+                FROM justificatif
+                WHERE justificatif.date_debut_demande = j.date_debut_demande AND
+                      justificatif.date_fin_demande = j.date_fin_demande AND
+                      justificatif.id_utilisateur = j.id_utilisateur
+            ) AS ids,
+            (
+                SELECT ARRAY_AGG(nom_fichier_original)
+                FROM justificatif
+                WHERE justificatif.date_debut_demande = j.date_debut_demande AND
+                      justificatif.date_fin_demande = j.date_fin_demande AND
+                      justificatif.id_utilisateur = j.id_utilisateur
+            ) AS noms_fichiers
+        FROM justificatif j
+        JOIN derniere_decision jh ON j.id = jh.id_justificatif
+        JOIN justificatifabsence ja ON ja.id_justificatif = j.id
+        WHERE j.id_utilisateur = :uid
+        GROUP BY j.id, jh.action, jh.motif_decision
+        ORDER BY j.date_debut_demande DESC
+        ";
 
         $st_decl = $pdo->prepare($sql_decl);
         $st_decl->execute([':uid' => $userId]);
         $declarations = $st_decl->fetchAll(\PDO::FETCH_ASSOC);
 
         foreach ($declarations as $decl) {
-            if ($decl['last_action'] !== 'SOUMISSION' && $decl['last_action'] !== null) {
-                continue;
+            $dateRange = $decl['date_debut_demande'] . ' → ' . $decl['date_fin_demande'];
+
+            $statut = match($decl['last_action']) {
+                'JUSTIFIEE', 'ACCEPTATION' => 'Accepté',
+                'DEMANDE_PRECISIONS' => 'À préciser',
+                'REJET' => 'rejeté',
+                default => 'En attente'
+            };
+
+            $motifDisplay = 'DÉCLARATION : ' . ($decl['commentaire'] ?? 'Absence déclarée');
+
+            $commentaireAffiche = !empty($decl['motif_decision']) ? $decl['motif_decision'] : "Déclaration en attente";
+
+            $ids = explode(',', trim($decl['ids'], '{}'));
+            $noms_fichiers = explode(',', trim($decl['noms_fichiers'], '{}'));
+
+            $fichiers = [];
+
+            for($i = 0; $i < count($ids); $i++) {
+                if($noms_fichiers[$i] != 'NULL') {
+                    $fichiers[] = $ids[$i];
+                }
             }
 
-            $dateRange = $decl['date_debut'] . ' → ' . $decl['date_fin'];
-            $statut = 'En attente';
-            $motifDisplay = 'DÉCLARATION : ' . ($decl['raison_demande'] ?? 'Absence déclarée');
-
-
-            $commentaireAffiche = !empty($decl['commentaire']) ? $decl['commentaire'] : "Déclaration en attente";
-
             $out[] = [
-                'absence_id'      => 0,
-                'date'            => $dateRange,
-                'motif'           => $motifDisplay,
-                'justificatif_id' => (int)$decl['justificatif_id'],
-                'statut'          => $statut,
-                'commentaire'     => !empty($decl['commentaire']) ? $decl['commentaire'] : "Déclaration en attente",
-                'is_range'        => true,
-                'has_file'        => !empty($decl['nom_fichier_original']),
+                'absence_id' => 0,
+                'date' => $dateRange,
+                'motif' => $motifDisplay,
+                'main_id' => $decl['main_id'],
+                'files_id' => $fichiers,
+                'statut' => $statut,
+                'commentaire' => $commentaireAffiche,
+                'is_range' => true
             ];
         }
 
@@ -287,6 +253,7 @@ final class AbsenceModel
 
     public static function insertDemandeJustification($userId, string $dateDebut, string $dateFin, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '') {
         $pdo = db();
+        $pdo->beginTransaction();
 
         // On force l'affichage des erreurs pour ce bloc
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
@@ -320,29 +287,46 @@ final class AbsenceModel
             // On commente la liaison pour vérifier si l'insertion de base fonctionne enfin
             self::linkJustificatifToAbsences($jid, $userId, $dateDebut, $dateFin);
 
+            $pdo->commit();
+
             return $jid;
 
         } catch (\Exception $e) {
             // Si ça rate, on arrête tout et on affiche l'erreur en GROS
             echo "<h1>ERREUR SQL DETECTEE</h1>";
             echo "<pre>" . $e->getMessage() . "</pre>";
+            $pdo->rollBack();
             die();
         }
     }
 
-    public static function linkJustificatifToAbsences(int $justifId, int $userId, string $dateDebut, string $dateFin): int {
+    public static function getAbsenceForUserBetweenPeriod(int $userId, string $dateDebut, string $dateFin): array {
         $pdo = db();
-        // AUCUNE transaction ici, on utilise celle du parent.
 
         $sql = "SELECT a.id FROM Absence a JOIN Seance s ON s.id = a.id_seance
             WHERE a.id_utilisateur = :uid AND a.justification IN ('INCONNU', 'NON_JUSTIFIEE')
             AND s.date BETWEEN :dd AND :df
-            AND NOT EXISTS (SELECT 1 FROM JustificatifAbsence ja JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
-                            WHERE ja.id_absence = a.id AND hd.action IN ('SOUMISSION', 'ACCEPTATION'))";
+            AND NOT EXISTS (SELECT 1
+    FROM JustificatifAbsence ja
+    JOIN HistoriqueDecision hd ON hd.id_justificatif = ja.id_justificatif
+    WHERE ja.id_absence = a.id
+    AND hd.id = (
+        SELECT MAX(hd2.id)
+        FROM HistoriqueDecision hd2
+        WHERE hd2.id_justificatif = ja.id_justificatif
+    )
+    AND hd.action IN ('SOUMISSION', 'ACCEPTATION'))";
 
         $st = $pdo->prepare($sql);
         $st->execute([':uid' => $userId, ':dd' => $dateDebut, ':df' => $dateFin]);
-        $ids = $st->fetchAll(\PDO::FETCH_COLUMN);
+
+        return $st->fetchAll(\PDO::FETCH_COLUMN);
+    }
+
+    public static function linkJustificatifToAbsences(int $justifId, int $userId, string $dateDebut, string $dateFin): int {
+        $ids = self::getAbsenceForUserBetweenPeriod($userId, $dateDebut, $dateFin);
+
+        $pdo = db();
 
         if (empty($ids)) return 0;
 

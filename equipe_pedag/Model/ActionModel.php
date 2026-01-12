@@ -49,7 +49,7 @@ class ActionModel
 
 
     // marque une absence justifiée quand on l'accepte dans la bdd (Renommée en marquer_absence_justifiee)
-    public function marquer_absence_justifiee(int $justifId)
+    public function marquer_absence_justifiee(int $justifId, $etat)
     { // RENOMMÉ
 
         $sql = "SELECT JustificatifAbsence.id_absence FROM JustificatifAbsence WHERE JustificatifAbsence.id_justificatif = :id";
@@ -63,48 +63,40 @@ class ActionModel
             return;
         }
 
-        $sql2 = "UPDATE Absence SET justification = 'JUSTIFIEE', commentaire = NULL WHERE id = :id";
+        $sql2 = "UPDATE Absence SET justification = :etat, commentaire = NULL WHERE id = :id";
 
         $st2 = $this->pdo->prepare($sql2);
-        $st2->execute([':id' => $abs['id_absence']]);
+        $st2->execute([':id' => $abs['id_absence'], ':etat' => $etat]);
     }
 
-    public function marquer_absence(int $idAbsence, $etat) {
+    public function marquer_absence(array $idsAbsence, $etat, $motif, $commentaire) {
         $etatValide = ['JUSTIFIEE', 'NON_JUSTIFIEE'];
 
         if(!in_array($etat, $etatValide)) {
             exit();
         }
 
-        $sql = "UPDATE Absence SET justification = :etat WHERE id = :id";
+        $valeurs = implode(',', array_fill(0, count($idsAbsence), '?'));
+
+        $sql = "UPDATE Absence 
+                SET justification = ?,
+                    motif = ?,
+                    commentaire = ?
+                WHERE id in ($valeurs)";
 
         $st = $this->pdo->prepare($sql);
 
-        $st->execute([':id' => $idAbsence, ':etat' => $etat]);
-    }
-
-    // marque une absence rejetée quand on l'accepte dans la bdd (Renommée en marquer_absence_justifiee)
-    public function marquer_absence_rejetee(int $justifId)
-    {
-
-        $sql = "SELECT JustificatifAbsence.id_absence FROM JustificatifAbsence WHERE JustificatifAbsence.id_justificatif = :id";
-
-        $st = $this->pdo->prepare($sql);
-        $st->execute([':id' => $justifId]);
-
-        $abs = $st->fetch();
-
-        if (!$abs) {
-            return;
+        $params = [$etat, $motif, $commentaire];
+        foreach ($idsAbsence as $id) {
+            $params[] = $id;
         }
 
-        $sql2 = "UPDATE Absence SET justification = 'JUSTIFIEE', commentaire = NULL WHERE id = :id";
-
-        $st2 = $this->pdo->prepare($sql2);
-        $st2->execute([':id' => $abs['id_absence']]);
+        $st->execute($params);
     }
 
-    public function dupliquerJustificatif($idJustificatif) {
+    // Insérer un nouveau fichier quand un justificatif est déverrouillé, cad, en révision (statut : à préciser)
+    public function insertionNouveauFichier($idJustificatif, $fichier, $fichier_nom, $type_mime) {
+        // Cloner le justificatif actuel
         $sql = "INSERT INTO justificatif (fichier, commentaire, motif_libre, id_utilisateur, nom_fichier_original, type_mime, verouille_date, date_debut_demande, date_fin_demande)
                 (
                         SELECT fichier, commentaire, motif_libre, id_utilisateur, nom_fichier_original, type_mime, verouille_date, date_debut_demande, date_fin_demande
@@ -115,28 +107,57 @@ class ActionModel
         $st = $this->pdo->prepare($sql);
         $st->execute([':id' => $idJustificatif]);
 
+        $idJustificatif = $st->fetch()['id'];
+
+        // Mettre a jour le fichier dans le clone
+        $sql = "UPDATE justificatif
+                SET fichier = :fichier,
+                    nom_fichier_original = :fichier_nom,
+                    type_mime = :type_mime
+                WHERE id = :id";
+
+        $st = $this->pdo->prepare($sql);
+
+        $st->bindValue(':fichier', $fichier,$fichier === null ? \PDO::PARAM_NULL : \PDO::PARAM_LOB);
+        $st->bindValue(':fichier_nom', $fichier_nom);
+        $st->bindValue(':type_mime', $type_mime);
+        $st->bindValue(':id', $idJustificatif);
+
+        $st->execute();
+    }
+
+    public function cloneJustificatif($id) {
+        $sql = "INSERT INTO justificatif (fichier, commentaire, motif_libre, id_utilisateur, nom_fichier_original, type_mime, verouille_date, date_debut_demande, date_fin_demande)
+                (
+                        SELECT fichier, commentaire, motif_libre, id_utilisateur, nom_fichier_original, type_mime, verouille_date, date_debut_demande, date_fin_demande
+                        FROM justificatif
+                        WHERE id = :id
+                ) RETURNING id";
+
+        $st = $this->pdo->prepare($sql);
+
+        $st->execute(['id'=>$id]);
+
         return $st->fetch()['id'];
     }
 
-    public function deplacerAbsences($nonSelectionnes, $nouveauJustificatifId, $ancienJustificatifId) {
+    public function deplacerAbsenceJustificatifs($nonSelectionnes, $idJustificatif, $motif, $commentaire, $actuelID) {
         if (empty($nonSelectionnes)) {
             return;
         }
 
         $valeurs = implode(',', array_fill(0, count($nonSelectionnes), '?'));
 
-        $sql = "UPDATE justificatifabsence
+        $sql = "UPDATE justificatifAbsence
                 SET id_justificatif = ?
-                WHERE id_justificatif = ?
-                    AND id_absence IN ($valeurs)
-                ";
+                WHERE id_justificatif = ? AND id_absence in ($valeurs)";
 
-        $st = $this->pdo->prepare($sql);
-
-        $params = [$nouveauJustificatifId, $ancienJustificatifId];
+        $params = [$idJustificatif, $actuelID];
         foreach ($nonSelectionnes as $id) {
             $params[] = $id;
         }
+
+        $st = $this->pdo->prepare($sql);
 
         $st->execute($params);
     }

@@ -68,71 +68,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST["valider"])) {
     } elseif (!$hasAnyProof) {
         $message = "Erreur: Veuillez ajouter un commentaire OU importer au moins un fichier justificatif.";
     } else {
+        $absencesIds = AbsenceModel::getAbsenceForUserBetweenPeriod($userId, $dateDebut, $dateFin);
 
-        try {
-            $justifIds = [];
+        if(count($absencesIds) == 0) {
+            $message= "Erreur: Veuillez sélectionner une période contenant des absences à justifier.";
+        }
+        else {
+            try {
+                $justifIds = [];
 
-            // 1. Si des fichiers ont été uploadés, créer un justificatif pour chacun
-            foreach ($uploadedFiles as $file) {
-                $original = (string)$file['name'];
-                $mime     = (string)($file['type'] ?: 'application/octet-stream');
-                $blob     = file_get_contents($file['tmp_name']);
+                // 1. Si des fichiers ont été uploadés, créer un justificatif pour chacun
+                foreach ($uploadedFiles as $file) {
+                    $original = (string)$file['name'];
+                    $mime = (string)($file['type'] ?: 'application/octet-stream');
+                    $blob = file_get_contents($file['tmp_name']);
 
-                $justifIds[] = AbsenceModel::insertDemandeJustification(
-                        $userId,
-                        $dateDebut,
-                        $dateFin,
-                        $original,
-                        $mime,
-                        $blob,
-                        $commentaire,
-                        $raison
-                );
+                    $justifIds[] = AbsenceModel::insertDemandeJustification(
+                            $userId,
+                            $dateDebut,
+                            $dateFin,
+                            $original,
+                            $mime,
+                            $blob,
+                            $commentaire,
+                            $raison
+                    );
+                }
+
+                // 2. Si AUCUN fichier n'a été uploadé mais qu'un commentaire est présent,
+                //    on insère une déclaration simple (fichier NULL)
+                if (empty($justifIds) && $hasComment) {
+                    $justifIds[] = AbsenceModel::insertDemandeJustification(
+                            $userId,
+                            $dateDebut,
+                            $dateFin,
+                            null,
+                            null,
+                            null,
+                            $commentaire,
+                            $raison
+                    );
+                }
+
+                if (empty($justifIds)) {
+                    throw new \Exception("Aucun justificatif n'a pu être enregistré.");
+                }
+
+                $justifId = $justifIds[0]; // ID du premier justificatif pour l'email/redirection
+                $nbFichiers = count($justifIds);
+
+
+                // 4. Notification et Redirection
+                $subject = "Confirmation de soumission de justificatif d'absence - UPHF";
+                $file_message = ($nbFichiers > 1) ? "($nbFichiers fichiers)" : (empty($uploadedFiles) ? "(Déclaration simple)" : "(1 fichier)");
+
+                $body = "<p>Bonjour " . htmlspecialchars($userName) . ",</p>"
+                        . "<p>Votre demande de justification $file_message (ID #$justifId) couvrant la période du <strong>" . htmlspecialchars($dateDebut) . "</strong> au <strong>" . htmlspecialchars($dateFin) . "</strong> a été enregistrée.</p>"
+                        . "<p>Motif déclaré: <strong>" . htmlspecialchars($raison) . "</strong></p>"
+                        . "<p>Statut actuel: <strong>En attente de traitement</strong>.</p>";
+
+                // Envoi d'email
+                if (!NotificationService::sendEmail($userEmail, $subject, $body, $userName)) {
+                    error_log("Échec de l'envoi de l'email de confirmation à $userEmail pour justif #$justifId.");
+                }
+
+                header('Location: ' . BASE_PATH . '/mesabsence/index.php?ok=justif_sent');
+                exit;
+
+            } catch (Throwable $e) {
+                $message = "Erreur d'insertion : " . $e->getMessage();
+                error_log("ERREUR justification.php : " . $e->getMessage());
             }
-
-            // 2. Si AUCUN fichier n'a été uploadé mais qu'un commentaire est présent,
-            //    on insère une déclaration simple (fichier NULL)
-            if (empty($justifIds) && $hasComment) {
-                $justifIds[] = AbsenceModel::insertDemandeJustification(
-                        $userId,
-                        $dateDebut,
-                        $dateFin,
-                        null,
-                        null,
-                        null,
-                        $commentaire,
-                        $raison
-                );
-            }
-
-            if (empty($justifIds)) {
-                throw new \Exception("Aucun justificatif n'a pu être enregistré.");
-            }
-
-            $justifId = $justifIds[0]; // ID du premier justificatif pour l'email/redirection
-            $nbFichiers = count($justifIds);
-
-
-            // 4. Notification et Redirection
-            $subject = "Confirmation de soumission de justificatif d'absence - UPHF";
-            $file_message = ($nbFichiers > 1) ? "($nbFichiers fichiers)" : (empty($uploadedFiles) ? "(Déclaration simple)" : "(1 fichier)");
-
-            $body = "<p>Bonjour " . htmlspecialchars($userName) . ",</p>"
-                    . "<p>Votre demande de justification $file_message (ID #$justifId) couvrant la période du <strong>" . htmlspecialchars($dateDebut) . "</strong> au <strong>" . htmlspecialchars($dateFin) . "</strong> a été enregistrée.</p>"
-                    . "<p>Motif déclaré: <strong>" . htmlspecialchars($raison) . "</strong></p>"
-                    . "<p>Statut actuel: <strong>En attente de traitement</strong>.</p>";
-
-            // Envoi d'email
-            if (!NotificationService::sendEmail($userEmail, $subject, $body, $userName)) {
-                error_log("Échec de l'envoi de l'email de confirmation à $userEmail pour justif #$justifId.");
-            }
-
-            header('Location: ' . BASE_PATH . '/mesabsence/index.php?ok=justif_sent');
-            exit;
-
-        } catch (Throwable $e) {
-            $message = "Erreur d'insertion : " . $e->getMessage();
-            error_log("ERREUR justification.php : " . $e->getMessage());
         }
     }
 }

@@ -26,7 +26,7 @@ class RejetPresenter {
 
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $motif = trim($_POST['motifDecision'] ?? '');
-        $idAuteur = 3; // responsable connecté
+        $idAuteur = $_SESSION['user']['id']; // responsable connecté
 
         if ($idJustificatif <= 0) {
             header('Location: index.php');

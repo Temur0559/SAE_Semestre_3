@@ -196,11 +196,8 @@ class HistoriqueView {
                         $opts = [
                                 'toutes'=>'Toutes',
                                 'DEMANDE_PRECISIONS'=>'Demande de précisions',
-                                'RENVOI_FICHIER'=>'Renvoi de fichier',
                                 'ACCEPTATION'=>'Acceptation',
                                 'REJET'=>'Rejet',
-                                'AUTORISATION_RENVOI'=>'Autorisation renvoi',
-                                'AUTORISATION_HORS_DELAI'=>'Autorisation hors délai'
                         ];
                         foreach($opts as $val=>$lab):
                             $sel = ($action === $val ? 'selected' : '');
@@ -224,8 +221,8 @@ class HistoriqueView {
                 <tr>
                     <th>Action le</th>
                     <th>Étudiant</th>
-                    <th>Date Absence</th>
-                    <th>Décision</th>
+                    <th>Période d'absence déclarée</th>
+                    <th>Dernière décision</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -251,29 +248,33 @@ class HistoriqueView {
 
 
                         <td>
-                            <details>
-                                <summary style="cursor:pointer; list-style:none;"><?= $this->action_badge($r['action']) ?> <small>(cliquer pour détails)</small></summary>
-                                <div class="action-details">
-                                    <p style="margin-top:10px;">
-                                        <a
-                                                href="index.php?page=justificatif_detail&id=<?=$r['justif_id']?>"
-                                                style="text-decoration:none; font-weight:bold; color:var(--uphf-blue-light);"
-                                        > Voir les actions antécedentes
-                                        </a>
-                                    </p>
-
-                                    <div class="row-actions">
-                                        <form method="post" action="index.php?page=revenir_decision" style="display:flex; gap:10px; width:100%;">
-                                            <input type="hidden" name="id" value="<?=$r['justif_id']?>">
-                                            <input type="hidden" name="redirect" value="<?=htmlspecialchars($_SERVER['REQUEST_URI'])?>">
-                                            <input type="text" name="motif" placeholder="Nouveau motif..." style="flex-grow:1; padding:5px;">
-                                            <!-- en cas de test : <button class="btn-small neutral" name="action" value="SOUMISSION">En attente</button> -->
-                                            <button class="btn-small primary" name="action" value="ACCEPTATION">Accepter</button>
-                                            <button class="btn-small danger" name="action" value="REJET">Rejeter</button>
-                                        </form>
+                                <details>
+                                    <summary style="cursor:pointer; list-style:none;"><?= $this->action_badge($r['action']) ?> <small>(cliquer pour détails)</small></summary>
+                                    <div class="action-details">
+                                        <p style="margin-top:10px;">
+                                            <a
+                                                    href="index.php?page=justificatif_detail&id=<?=$r['id']?>"
+                                                    style="text-decoration:none; font-weight:bold; color:var(--uphf-blue-light);"
+                                            > Voir les actions antécedentes
+                                            </a>
+                                        </p>
+                                        <div class="row-actions">
+                                            <?php if($r['memeValeur']): ?>
+                                            <form method="post" action="index.php?page=revenir_decision" style="display:flex; gap:10px; width:100%;">
+                                                <input type="hidden" name="id" value="<?=$r['id']?>">
+                                                <input type="hidden" name="redirect" value="<?=htmlspecialchars($_SERVER['REQUEST_URI'])?>">
+                                                <input type="text" name="motif" placeholder="Nouveau motif..." style="flex-grow:1; padding:5px;">
+                                                <!-- en cas de test : <button class="btn-small neutral" name="action" value="SOUMISSION">En attente</button> -->
+                                                <button class="btn-small primary" name="action" value="ACCEPTATION">Accepter</button>
+                                                <button class="btn-small danger" name="action" value="REJET">Rejeter</button>
+                                            </form>
+                                            <?php else: ?>
+                                                <p>Pas d'actions disponibles sur ce justificatif</p>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                </div>
-                            </details>
+                                </details>
+
                         </td>
                     </tr>
                 <?php endforeach; ?>

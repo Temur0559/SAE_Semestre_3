@@ -13,14 +13,22 @@ class JustificatifDetailView {
 
     private function action_label($a){
         return match($a){
-            'SOUMISSION'         => 'Soumission',
+            'SOUMISSION' => 'Soumission',
             'DEMANDE_PRECISIONS' => 'Demande de précisions',
-            'RENVOI_FICHIER'     => 'Renvoi de fichier',
-            'ACCEPTATION'        => 'Acceptation',
-            'REJET'              => 'Rejet',
-            default              => $a,
+            'RENVOI_FICHIER' => 'Renvoi de fichier',
+            'ACCEPTATION' => 'Acceptation',
+            'REJET' => 'Rejet',
+            default => $a,
         };
     }
+
+    private function etat_label($a) {
+        return match($a) {
+            'NON_JUSTIFIEE' => 'Non justifiée',
+            'JUSTIFIEE' => 'Justifiée',
+            default => $a
+        };
+}
 
     public function render(array $justif, array $historique, array $listAbsence){
         if (empty($historique)) {
@@ -66,6 +74,7 @@ class JustificatifDetailView {
                 <tr>
                     <th>Date</th>
                     <th>Heure</th>
+                    <th>État</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -74,6 +83,11 @@ class JustificatifDetailView {
                     <tr>
                         <td><?= $this->fr_date($d['date']) ?></td>
                         <td><?= $this->fr_hm($d['heure']) ?></td>
+                        <td>
+                            <span class="badge <?= $d['justification'] ?>">
+                            <?= $this->etat_label($d['justification']) ?>
+                            </span>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

@@ -35,7 +35,7 @@ class JustificatifDetailPresenter {
         }
 
         $historiquedetail = $this->detailHistoriqueModel->detailParJustificatif($id);
-        $listeAbsence = $this->model->detailsJustificatif($id);
+        $listeAbsence = $this->model->detailsJustificatif($justif['id_utilisateur'], $justif['date_debut_demande'], $justif['date_fin_demande'])['listAbs'];
 
         // affiche la vue
         require __DIR__ . '/../view/JustificatifDetailView.php';

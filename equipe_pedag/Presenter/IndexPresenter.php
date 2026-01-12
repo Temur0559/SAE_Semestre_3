@@ -67,8 +67,10 @@ class IndexPresenter {
         // récupère les détails du justificatif choisi
         $details = [];
         if ($selected) {
-            $details = $this->model->detailsJustificatif($selected['id' ]);
+            $details = $this->model->detailsJustificatif($selected['etudiant_id'], $selected['date_debut_demande'], $selected['date_fin_demande']);
         }
+
+        //echo "<pre>"; var_export($details); echo "</pre>";
 
         require_once __DIR__ . '/../View/index.php';
         $view = new IndexView();

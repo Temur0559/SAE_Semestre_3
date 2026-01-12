@@ -24,19 +24,14 @@ class JustificatifInfosModel {
         )
         SELECT DISTINCT 
             Utilisateur.id AS etudiant_id,
-            Utilisateur.identifiant AS etu_identifiant,
             Utilisateur.nom AS etu_nom,
             Utilisateur.prenom AS etu_prenom,
-            Utilisateur.date_naissance,
 
             Justificatif.id AS id,
-            Justificatif.nom_fichier_original,
-            Justificatif.type_mime,
-            Justificatif.date_soumission,
-            Justificatif.verouille,
-            Justificatif.verouille_date,
             Justificatif.date_debut_demande,
             Justificatif.date_fin_demande,
+            Justificatif.commentaire,
+            Justificatif.motif_libre,
 
             derniere_decision.action,
             derniere_decision.motif_decision
@@ -56,50 +51,59 @@ class JustificatifInfosModel {
 
         return $this->pdo->query($sql)->fetchAll();
     }
-    public function detailsJustificatif(int $idJustificatif): array
+    public function detailsJustificatif(int $id_utilisateur, $dateDebut, $dateFin): array
     {
-        $sql = "SELECT
-        j.id,
-            j.nom_fichier_original,
-            j.type_mime,
-            j.date_soumission,
-            j.date_debut_demande,
-            j.date_fin_demande,
-            j.motif_libre,
-            j.verouille,
-            j.verouille_date,
-
-            u.id AS etudiant_id,
-            u.nom,
-            u.prenom,
-            u.identifiant,
-
-            a.id AS absence_id,
-            s.id AS seance_id,
-            s.date,
-            s.heure,
-            s.duree,
-            (s.date + s.heure::interval + s.duree) AS seance_fin
-
-        FROM Justificatif j
-        JOIN Utilisateur u ON u.id = j.id_utilisateur
-
-        JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
-        JOIN Absence a ON a.id = ja.id_absence
-        JOIN Seance s 
-            ON s.id = a.id_seance
-            AND s.date BETWEEN j.date_debut_demande AND j.date_fin_demande
-
-        WHERE j.id = :id
-        ORDER BY s.date, s.heure
-    ";
-
-
+        $sql = "SELECT DISTINCT 
+                    a.id AS absence_id,
+                    s.id AS seance_id,
+                    s.date,
+                    s.heure,
+                    s.duree,
+                    (s.date + s.heure::interval + s.duree) AS seance_fin,
+                    a.justification
+                    
+                    FROM Justificatif j
+                    JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
+                    JOIN Absence a ON a.id = ja.id_absence
+                    JOIN Seance s
+                        ON s.id = a.id_seance
+                        AND s.date BETWEEN j.date_debut_demande AND j.date_fin_demande
+            
+                    WHERE j.date_debut_demande = :dateDebut
+                      AND j.date_fin_demande = :dateFin
+                      AND j.id_utilisateur = :idu
+                    ORDER BY s.date, s.heure
+                ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':id' => $idJustificatif]);
+        $stmt->execute([
+            ':idu' => $id_utilisateur,
+            ':dateDebut' => $dateDebut,
+            ':dateFin' => $dateFin
+        ]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $listAbs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $sql = "SELECT id, fichier, nom_fichier_original
+                FROM justificatif
+                WHERE nom_fichier_original IS NOT NULL
+                    AND id_utilisateur = :idu
+                    AND date_debut_demande = :dateDebut
+                    AND date_fin_demande = :dateFin";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':idu' => $id_utilisateur,
+            ':dateDebut' => $dateDebut,
+            ':dateFin' => $dateFin
+        ]);
+
+        $listFichiers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'listAbs' => $listAbs,
+            'listFichiers' => $listFichiers
+        ];
     }
 
 

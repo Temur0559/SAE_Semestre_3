@@ -33,8 +33,7 @@ class RevenirDecisionPresenter {
         $redirect = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
 
         // actions autorisées
-        $possibles = [
-            'SOUMISSION','DEMANDE_PRECISIONS','ACCEPTATION','REJET','AUTORISATION_RENVOI','AUTORISATION_HORS_DELAI'];
+        $possibles = ['ACCEPTATION','REJET'];
 
         if ($idJustificatif <= 0 || !in_array($nouvelleAction, $possibles, true)) {
             header('Location: '.$redirect);
@@ -61,15 +60,15 @@ class RevenirDecisionPresenter {
 
         if ($nouvelleAction === 'ACCEPTATION') {
             // marquer absence comme justifiée
-            $this->actionModel->marquer_absence_justifiee($idJustificatif); // Utilisation de la méthode corrigée
+            $this->actionModel->marquer_absence_justifiee($idJustificatif, 'JUSTIFIEE'); // Utilisation de la méthode corrigée
+            $this->actionModel->verrouiller($idJustificatif);
         }
 
         if ($nouvelleAction === 'REJET') {
             // re verrouiller
+            $this->actionModel->marquer_absence_justifiee($idJustificatif, 'NON_JUSTIFIEE');
             $this->actionModel->verrouiller($idJustificatif);
         }
-
-
 
         // 3) redirection
         header('Location: ' . $redirect);

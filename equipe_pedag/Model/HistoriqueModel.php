@@ -28,14 +28,14 @@ class HistoriqueModel {
 
         // filtre par la date de debut qu'on met
         if ($filtrerDate1 !== '') {
-            $conditions[] = "HistoriqueDecision.date_action >= :dateMin";
-            $params[':dateMin'] = $filtrerDate1 . " 00:00:00";
+            $conditions[] = "Justificatif.date_debut_demande <= :dateMax";
+            $params[':dateMax'] = $filtrerDate1 . " 00:00:00";
         }
 
         // filtre par la dae max qu'on met
         if ($filtrerDate2 !== '') {
-            $conditions[] = "HistoriqueDecision.date_action <= :dateMax";
-            $params[':dateMax'] = $filtrerDate2 . " 23:59:59";
+            $conditions[] = "Justificatif.date_fin_demande >= :dateMin";
+            $params[':dateMin'] = $filtrerDate2 . " 23:59:59";
         }
 
         // requete de notre filtre
@@ -70,24 +70,37 @@ class HistoriqueModel {
 
         list($where, $params) = $this->construireFiltres($filtrerTexte, $filtrerDecision, $filtrerDate1, $filtrerDate2);
 
-        $sql = " SELECT hd.id, hd.date_action, hd.action, hd.motif_decision, j.id AS justif_id, j.nom_fichier_original,j.date_soumission, j.date_debut_demande, j.date_fin_demande, u.id AS etu_id,u.prenom AS etu_prenom,u.nom AS etu_nom
- FROM (
- SELECT hd.id, hd.id_justificatif, hd.action, hd.date_action, hd.motif_decision
- FROM HistoriqueDecision hd
-INNER JOIN ( 
-SELECT id_justificatif, MAX(date_action) AS max_date FROM HistoriqueDecision GROUP BY id_justificatif ) last_decision ON last_decision.id_justificatif = hd.id_justificatif AND last_decision.max_date = hd.date_action) hd
-JOIN Justificatif j ON j.id = hd.id_justificatif
-JOIN Utilisateur u ON u.id = j.id_utilisateur
-LEFT JOIN JustificatifAbsence ja ON ja.id_justificatif = j.id
-LEFT JOIN Absence a ON a.id = ja.id_absence
-LEFT JOIN Seance s ON s.id = a.id_seance
+        $sql = "WITH derniere_decision AS (
+                    SELECT
+                        DISTINCT ON (HistoriqueDecision.id_justificatif)
+                        HistoriqueDecision.id_justificatif,
+                        HistoriqueDecision.action,
+                        HistoriqueDecision.motif_decision,
+                        HistoriqueDecision.date_action
+                    FROM HistoriqueDecision
+                    ORDER BY HistoriqueDecision.id_justificatif, HistoriqueDecision.date_action DESC, HistoriqueDecision.id DESC
+                )
+                SELECT DISTINCT
+                    Utilisateur.id AS etudiant_id,
+                    Utilisateur.nom AS etu_nom,
+                    Utilisateur.prenom AS etu_prenom,
+                
+                    Justificatif.id AS id,
+                    Justificatif.date_debut_demande,
+                    Justificatif.date_fin_demande,
+                
+                    HistoriqueDecision.action,
+                    HistoriqueDecision.date_action
+                
+                FROM Justificatif
+                JOIN Utilisateur ON Utilisateur.id = Justificatif.id_utilisateur
+                JOIN JustificatifAbsence ON Justificatif.id = JustificatifAbsence.id_justificatif
+                JOIN derniere_decision AS HistoriqueDecision ON HistoriqueDecision.id_justificatif = Justificatif.id
 
-$where
-GROUP BY hd.id, hd.date_action, hd.action, hd.motif_decision, j.id, j.nom_fichier_original, j.date_soumission, j.date_debut_demande, j.date_fin_demande, u.id, u.prenom, u.nom
+                $where
+                ORDER BY HistoriqueDecision.date_action DESC NULLS LAST
+                LIMIT :lim OFFSET :off";
 
-
-ORDER BY hd.date_action DESC
-LIMIT :lim OFFSET :off";
         $stmt = $this->pdo->prepare($sql);
 
         // Pagination

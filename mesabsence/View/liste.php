@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-
 require_once __DIR__ . '/../../connexion/config/base_path.php';
 
 if (!isset($_SESSION)) { session_start(); }
@@ -183,9 +182,9 @@ $ok = $_GET['ok'] ?? null;
         }
         .status.accepted { background-color: #28a745; } /* Vert */
         .status.rejected { background-color: #dc3545; } /* Rouge */
-        .status.review { background-color: #ffc107; color: #333; } /* Jaune/orange, texte noir */
-        .status.pending { background-color: #6c757d; } /* Gris */
-        .status.en-attente { background-color: #6c757d; }
+        .status.review { background-color: #85AEDE; color: #333; } /* Jaune/orange, texte noir */
+        .status.pending { background: #F5B363; color: #856404; } /* Gris */
+        .status.notjustified { background-color: gray; }
 
     </style>
 
@@ -224,8 +223,7 @@ $ok = $_GET['ok'] ?? null;
     <h1 class="title">Mes absences</h1>
 
     <?php
-    if (isset($ok) && $ok === 'justif_sent'):
-        ?>
+    if (isset($ok) && $ok === 'justif_sent'): ?>
         <div class="alert success">
             **Justificatif envoyé avec succès ! Il est maintenant en statut "En attente".**
         </div>
@@ -238,11 +236,11 @@ $ok = $_GET['ok'] ?? null;
                 <?php
                 $filtreActuel = isset($_GET['filtre']) ? $_GET['filtre'] : 'tous';
                 $opts = [
-                        'tous'        => 'Tous',
-                        'accepté'     => 'Accepté',
-                        'rejeté'      => 'Rejeté',
+                        'tous' => 'Tous',
+                        'accepté' => 'Accepté',
+                        'rejeté' => 'Rejeté',
                         'en révision' => 'En révision',
-                        'en attente'  => 'En attente'
+                        'en attente' => 'En attente'
                 ];
                 foreach ($opts as $val => $lab) {
                     $sel = (strtolower($filtreActuel) === strtolower($val)) ? 'selected' : '';
@@ -270,7 +268,7 @@ $ok = $_GET['ok'] ?? null;
                 <thead>
                 <tr>
                     <th>DATE (ou Plage)</th>
-                    <th>COURS / MOTIF</th>
+                    <th>MOTIF</th>
                     <th>JUSTIFICATIF</th>
                     <th>STATUT</th>
                     <th>COMMENTAIRE</th>
@@ -290,13 +288,16 @@ $ok = $_GET['ok'] ?? null;
                         $cls = 'accepted';
                     } elseif ($s === 'rejeté' || $s === 'rejete') {
                         $cls = 'rejected';
-                    } elseif ($s === 'en révision' || $s === 'en revision') {
+                    } elseif ($s === 'À préciser' || $s === 'en revision') {
                         $cls = 'review';
                     } elseif ($s === 'en attente') {
                         $cls = 'pending';
                     }
-                    $displayStatus = $a['statut'];
+                    else if ($s === 'non justifié' || $s === 'non justifie') {
+                        $cls = 'notjustified';
+                    }
 
+                    $displayStatus = $a['statut'];
 
                     if (strtolower($filtreActuel) !== 'tous') {
                         if (strpos(strtolower($displayStatus), strtolower($filtreActuel)) === false) {
@@ -309,11 +310,12 @@ $ok = $_GET['ok'] ?? null;
                         <td><?= htmlspecialchars($a['motif']) ?></td>
                         <td class="justif-cell" style="text-align: center;">
                             <?php
-                            if (!empty($a['justificatif_id']) && ($a['has_file'] ?? true)): ?>
-                                <a href="<?= BASE_PATH ?>/mesabsence/get_justif.php?id=<?= (int)$a['justificatif_id'] ?>" target="_blank">📄</a>
+                            if ($a['files_id'] != NULL && count($a['files_id']) != 0): ?>
+                                <a href="<?= BASE_PATH .'/mesabsence/get_files.php?ids=' . implode(',', $a['files_id'])?>">📄</a>
                             <?php else: ?>
                                 <span style="color: #ccc;">—</span>
-                            <?php endif; ?>
+                            <?php endif;
+                            ?>
                         </td>
                         <td class="status <?= $cls ?>"><?= htmlspecialchars($displayStatus) ?></td>
                         <td><?= htmlspecialchars($a['commentaire'] ?? '') ?></td>
@@ -323,13 +325,12 @@ $ok = $_GET['ok'] ?? null;
                             $isRange = $a['is_range'] ?? false;
                             // On vérifie si le statut est "en révision" (indépendamment de la casse)
                             $s_lower = strtolower(trim($a['statut']));
-                            $enRevision = ($s_lower === 'en révision' || $s_lower === 'en revision');
+                            $enRevision = ($s_lower === 'À préciser');
 
                             // 1. Si l'upload est autorisé (Absence normale en révision OU Déclaration en révision)
                             if ($enRevision): ?>
                                 <form action="<?= BASE_PATH ?>/mesabsence/upload.php" method="post" enctype="multipart/form-data" class="upload-form">
-                                    <input type="hidden" name="absence_id" value="<?= (int)($a['absence_id'] ?? 0) ?>">
-                                    <input type="hidden" name="justificatif_id" value="<?= (int)($a['justificatif_id'] ?? 0) ?>">
+                                    <input type="hidden" name="justificatif_id" value="<?= $a['main_id'] ?>">
                                     <input type="file" name="justificatif" required>
                                     <button type="submit" class="btn-insert">INSÉRER</button>
                                 </form>

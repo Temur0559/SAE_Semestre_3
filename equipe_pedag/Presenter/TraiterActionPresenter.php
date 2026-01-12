@@ -16,122 +16,125 @@ class TraiterActionPresenter {
     }
 
     public function handle() {
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: historique.php');
-            exit;
-        }
-
-        // Données envoyées
-        $idJustificatif = (int)($_POST['id'] ?? 0);
-        $actionDemandee = $_POST['action'] ?? '';
-        $selectionner = $_POST['selectionner'] ?? [];
-        $selectionner = array_map('intval', $selectionner);
-
         $redirect = $_POST['redirect'] ?? ($_SERVER['HTTP_REFERER'] ?? 'index.php');
 
-        // Liste des actions autorisées
-        $actionsAutorisees = ['SOUMISSION','DEMANDE_PRECISIONS','ACCEPTATION','REJET','AUTORISATION_RENVOI','AUTORISATION_HORS_DELAI'];
-
-        if ($idJustificatif <= 0 || !in_array($actionDemandee, $actionsAutorisees, true)) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . $redirect);
             exit;
         }
 
-        $idAuteur = 3; // ID responsable connecté
+        // Données envoyées
+        $idJustificatif = (int)$_POST['main_id'] ?? -1;
+        $etudiant_id = $_POST['etudiant_id'] ?? '';
+        $date_debut_demande = $_POST['date_debut_demande'] ?? '';
+        $date_fin_demande = $_POST['date_fin_demande'] ?? '';
 
-        // --- Récupérer toutes les absences liées au justificatif ---
-        $absences = $this->justificatifInfosModel->detailsJustificatif($idJustificatif);
-        $absencesIds = [];
-        foreach ($absences as $a) {
-            $absencesIds[] = $a['absence_id'];
+        $commentaire_acceptation = $_POST['commentaire_acceptation'] ?? '';
+        $commentaire_rejet = $_POST['commentaire_rejet'] ?? '';
+        $motif_accept = $_POST['motif_accept'] ?? '';
+        $motif_refus = $_POST['motif_refus'] ?? '';
+
+
+
+        $actionDemandee = $_POST['action'] ?? '';
+        $selectionner = $_POST['selectionner'] ?? [];
+        $selectionner = array_map('intval', $selectionner);
+
+        // Liste des actions autorisées
+        $actionsAutorisees = ['DEMANDE_PRECISIONS','ACCEPTATION','REJET'];
+
+        if ($idJustificatif < 0 ||
+            $etudiant_id == '' ||
+            $date_debut_demande == '' ||
+            $date_fin_demande == '' ||
+            !in_array($actionDemandee, $actionsAutorisees, true)
+        ) {
+            header('Location: ' . $redirect);
+            exit;
         }
 
-        // Sélectionner uniquement les absences valides
-        $selectionnes = [];
-        $nonSelectionnes = [];
-        foreach ($absencesIds as $a) {
-            if(in_array($a, $selectionner)) {
-                $selectionnes[] = $a;
+        $idAuteur = $_SESSION['user']['id']; // ID responsable connecté
+
+        if($actionDemandee == 'DEMANDE_PRECISIONS') {
+            $this->actionModel->deverouille($idJustificatif);
+        }
+        else {
+            // --- Récupérer toutes les absences liées au justificatif ---
+            $absences = $this->justificatifInfosModel->detailsJustificatif($etudiant_id, $date_debut_demande, $date_fin_demande);
+
+            $absencesIds = [];
+            foreach ($absences['listAbs'] as $a) {
+                $absencesIds[] = $a['absence_id'];
             }
-            else {
-                $nonSelectionnes[] = $a;
+
+            // Obtenir les absences selectionnées et non selectionnées
+            $selectionnes = [];
+            $nonSelectionnes = [];
+            foreach ($absencesIds as $a) {
+                if(in_array($a, $selectionner)) {
+                    $selectionnes[] = $a;
+                }
+                else {
+                    $nonSelectionnes[] = $a;
+                }
             }
-        }
 
-        // --- Créer un nouveau justificatif pour les absences non sélectionnées ---
-        if (!empty($nonSelectionnes)) {
-            $nouveauJustificatifId = $this->actionModel->dupliquerJustificatif($idJustificatif);
+            $accepter = $actionDemandee == 'ACCEPTATION' ? $selectionnes : $nonSelectionnes;
+            $refuser = $actionDemandee == 'ACCEPTATION' ? $nonSelectionnes : $selectionnes;
 
-            // Déplacer les absences non sélectionnées vers ce nouveau justificatif
-            $this->actionModel->deplacerAbsences($nonSelectionnes, $nouveauJustificatifId, $idJustificatif);
-
-            $action = $actionDemandee == 'ACCEPTATION' ? 'REJET' : 'ACCEPTATION';
-            $this->actionModel->ajouter_decision(
-                $nouveauJustificatifId,
-                $action,
-                'Absences non sélectionnées',
-                $idAuteur
-            );
-
-            $this->actionModel->verrouiller($nouveauJustificatifId);
-        }
-
-        // Composer le motif pour le justificatif de base
-        $motif = null;
-        if ($actionDemandee === 'ACCEPTATION') {
-            $motifPredefini = trim($_POST['motif_predefini'] ?? '');
-            $commentaireAcc = trim($_POST['commentaire_acceptation'] ?? '');
-
-            if ($motifPredefini === '') {
+            if(count($accepter) != 0 && $motif_accept == '') {
+                header('Location: ' . $redirect);
+                exit;
+            }
+            if(count($refuser) != 0 && $motif_refus == '') {
                 header('Location: ' . $redirect);
                 exit;
             }
 
-            $motif = $motifPredefini;
-            if ($commentaireAcc !== '') {
-                $motif .= ' - ' . $commentaireAcc;
+            if(count($refuser) != 0) {
+                $this->actionModel->marquer_absence($refuser, 'NON_JUSTIFIEE', $motif_refus, $commentaire_rejet);
+                $id = $this->actionModel->cloneJustificatif($idJustificatif);
+
+                var_export($id);
+
+                $this->actionModel->deplacerAbsenceJustificatifs($refuser, $id, $motif_refus, $commentaire_rejet, $idJustificatif);
+
+                if($commentaire_rejet != '') {
+                    $commentaire_rejet = $motif_refus . ' - ' . $commentaire_rejet;
+                }
+                else {
+                    $commentaire_rejet = $motif_refus;
+                }
+
+                $this->actionModel->ajouter_decision(
+                    $id,
+                    'REJET',
+                    $commentaire_rejet,
+                    $idAuteur
+                );
+
+                $this->actionModel->verrouiller($id);
+            }
+            if(count($accepter) != 0) {
+                $this->actionModel->marquer_absence($accepter, 'JUSTIFIEE', $motif_accept, $commentaire_acceptation);
             }
 
-        } elseif ($actionDemandee === 'REJET') {
-            $motifDecision = trim($_POST['motifDecision'] ?? '');
-            $motif = ($motifDecision !== '' ? $motifDecision : null);
-        }
-
-        // Appliquer la décision sur les absences sélectionnées
-        foreach ($selectionnes as $absenceId) {
-            if ($actionDemandee === 'ACCEPTATION') {
-                $this->actionModel->marquer_absence($absenceId, 'JUSTIFIEE');
-            } elseif ($actionDemandee === 'REJET') {
-                $this->actionModel->marquer_absence($absenceId, 'NON_JUSTIFIEE');
+            if($commentaire_acceptation != '') {
+                $commentaire_acceptation = $motif_accept . ' - ' . $commentaire_acceptation;
             }
-        }
-        // Appliquer la décision inverse sur les non sélectionnées
-        foreach($nonSelectionnes as $absenceId) {
-            if($actionDemandee === 'ACCEPTATION') {
-                $this->actionModel->marquer_absence($absenceId, 'NON_JUSTIFIEE');
-            } else { // actionDemandee === 'REJET'
-                $this->actionModel->marquer_absence($absenceId, 'JUSTIFIEE');
+            else {
+                $commentaire_acceptation = $motif_accept;
             }
-        }
 
+            // Ajouter la décision globale sur le justificatif original
+            $this->actionModel->ajouter_decision(
+                $idJustificatif,
+                'ACCEPTATION',
+                $commentaire_acceptation,
+                $idAuteur
+            );
 
-        // Ajouter la décision globale sur le justificatif original
-        $this->actionModel->ajouter_decision(
-            $idJustificatif,
-            $actionDemandee,
-            $motif,
-            $idAuteur
-        );
-
-        // Verrouiller le justificatif original
-        if (in_array($actionDemandee, ['ACCEPTATION', 'REJET'], true)) {
             $this->actionModel->verrouiller($idJustificatif);
-        }
-
-        // Déverrouiller pour certaines actions
-        if (in_array($actionDemandee, ['DEMANDE_PRECISIONS', 'AUTORISATION_RENVOI', 'AUTORISATION_HORS_DELAI'], true)) {
-            $this->actionModel->deverouille($idJustificatif);
         }
 
         // Redirection

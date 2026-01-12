@@ -42,11 +42,6 @@ class IndexView {
         }
 
         }
-
-        $etu_nom   = $selected['etu_nom']         ?? '';
-        $etu_pre   = $selected['etu_prenom']      ?? '';
-        $etu_id    = $selected['etu_identifiant'] ?? '';
-        $etu_naiss = $selected['date_naissance']  ?? null;
         ?>
         <!doctype html>
         <html lang="fr">
@@ -54,7 +49,7 @@ class IndexView {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width,initial-scale=1">
             <title>Gestion Absences — Tableau de bord</title>
-            <link rel="stylesheet" href="<?= BASE_PATH ?>/connexion/Style.css">
+
             <style>
                 :root {
                     --uphf-blue-dark: #004085;
@@ -63,11 +58,19 @@ class IndexView {
                     --content-max-width: 1400px;
                 }
 
+                html {
+                    transform: scale(1);
+                }
+
+                html, body {
+                    max-width: 100vw;
+                }
+
                 body {
                     margin: 0;
                     padding-top: 80px;
                     background-color: #f4f7f6;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
                 }
 
                 .app-header-nav {
@@ -123,7 +126,6 @@ class IndexView {
 
                 .main-container {
                     width: 90%;
-                    max-width: var(--content-max-width);
                     margin: 0 auto;
                     display: grid;
                     grid-template-columns: 300px 1fr;
@@ -142,7 +144,7 @@ class IndexView {
 
                 .field { display: block; margin-bottom: 15px; }
                 .field span { display: block; font-size: 0.85rem; color: #666; margin-bottom: 5px; }
-                .field input { width: 100%; padding: 8px; border: 1px solid #ddd; background: #f9f9f9; }
+                .field input { width: 100%; padding: 8px; border: 1px solid #ddd; background: #f9f9f9; box-sizing: border-box; }
 
                 .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
                 .tab {
@@ -161,16 +163,28 @@ class IndexView {
                 .status-revision { background: #d1ecf1; color: #0c5460; }
 
                 .detail-pane { margin-top: 30px; background: #f8f9fa; border: 1px solid #ddd; padding: 20px; }
-                .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+                .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; justify-content: space-between; }
+                .detail-actions > form { width: 49%; }
                 .stack { flex: 1; min-width: 250px; background: white; padding: 15px; border: 1px solid #eee; }
                 .inp { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; }
-                .btn { width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: bold; color: white; }
+                .btn { width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: bold; color: white; border-radius:999px; }
                 .primary { background: var(--uphf-blue-light); }
                 .danger { background: var(--danger-color); }
                 .neutral { background: #6c757d; }
 
                 .table-wrapper {
                     max-height: 300px; overflow-y: auto;
+                }
+
+                .nom-ficher {
+                    display: block;
+                    width: fit-content;
+                    max-width: 400px;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    color: var(--uphf-blue-light);
+                    font-weight: bold;
                 }
             </style>
         </head>
@@ -196,10 +210,10 @@ class IndexView {
         </header>
 
         <div class="main-container">
-            <aside class="pane">
+            <aside class="pane" style="min-width: 0">
                 <div class="pane-title">Informations étudiant</div>
 
-                <form method="get">
+                <form method="get" style="min-width: 0">
                     <input type="hidden" name="ongletActif" value="<?= $ongletActif ?>">
 
                     <label class="field">
@@ -271,9 +285,6 @@ class IndexView {
                 <?php if($selected): ?>
                     <div class="detail-pane">
                         <h3>Détails du justificatif</h3>
-                        <p style="color:#888; font-size:0.9em;">
-                            <strong>ID justificatif :</strong> <?= $selected['id'] ?>
-                        </p>
 
                         <div style="margin 15px 0; padding: 10px; background: #eef6ff; border-left:4px solid #007bff;">
                             <strong>Période d'absence déclarée par l'étudiant : </strong><br>
@@ -298,7 +309,7 @@ class IndexView {
                                         name="message"
                                         rows="4"
                                         placeholder="Commentaire"
-                                        style="width:100%; padding:8px; margin-bottom:10px;"
+                                        style="width:100%; padding:8px; margin-bottom:10px;box-sizing: border-box;"
                                         required
                                 ></textarea>
 
@@ -319,26 +330,32 @@ class IndexView {
                                         <tr>
                                             <th>Date</th>
                                             <th>Heure</th>
+                                            <?php if(($selected['action'] ?? '') !== 'DEMANDE_PRECISIONS'): ?>
                                             <th>
                                                 <div style="display: flex; flex-direction: row; justify-content: space-between">
                                                     <p>Sélectionner</p>
                                                     <input type="checkbox" id="check-all"/>
                                                 </div>
                                             </th>
+                                            <?php endif; ?>
                                         </tr>
                                         </thead>
                                         <tbody>
 
-                                        <?php foreach ($details as $d): ?>
+                                        <?php foreach ($details['listAbs'] as $d): ?>
+                                        <?php if($d['justification'] != 'JUSTIFIEE'): ?>
                                             <tr>
                                                 <td><?= fr_date($d['date']) ?></td>
                                                 <td><?= fr_heure($d['heure']) ?></td>
+                                                <?php if(($selected['action'] ?? '') !== 'DEMANDE_PRECISIONS'): ?>
                                                 <td>
                                                     <div style="display: flex; flex-direction: row; justify-content: end">
                                                         <input name="selectionner[]" class="check-abs" style="margin-left: auto" type="checkbox" value="<?= $d['absence_id'] ?>">
                                                     </div>
                                                 </td>
+                                                <?php endif; ?>
                                             </tr>
+                                        <?php endif; ?>
                                         <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -348,61 +365,91 @@ class IndexView {
 
                         <p><strong>Étudiant :</strong> <?=propre($selected['etu_prenom'].' '.$selected['etu_nom'])?></p>
 
-                        <div style="margin: 20px 0;">
-                            <a href="index.php?page=fichier_justificatif&id=<?=$selected['id']?>" target="_blank" style="color: var(--uphf-blue-light); font-weight: bold;">
-                                Voir le document justificatif
-                            </a>
+                        <div style="display: flex; margin: 20px 0; gap: 10px">
+                            <div style="width: 50%; max-height: 120px;overflow: auto;" class="stack">
+                                <span style="font-weight: bold">Fichier(s):</span>
+                                <?php if (count($details['listFichiers']) != 0): ?>
+                                <?php foreach($details['listFichiers'] as $f): ?>
+                                    <a title="<?= $f['nom_fichier_original'] ?>" href="index.php?page=fichier_justificatif&id=<?= $f['id'] ?>" target="_blank" class="nom-ficher"><?= $f['nom_fichier_original'] ?></a>
+                                <?php endforeach; ?>
+                                <?php else: ?>
+                                <span>Aucun fichier n'a été fournis</span>
+                                <?php endif; ?>
+                            </div>
+                            <div style="width: 50%; max-height: 120px;overflow: auto;" class="stack">
+                                <div>
+                                    <span style="font-weight: bold">Motif : </span>
+                                    <span style="font-style: italic"> <?= $selected['motif_libre'] ?> </span>
+                                </div>
+                                <div>
+                                <?php if($selected['commentaire'] != null):  ?>
+                                    <span style="font-weight: bold">Commentaire : </span>
+                                    <span style="font-style: italic"> <?= $selected['commentaire'] ?> </span>
+                                <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="detail-actions">
-                            <form method="post" action="index.php?page=traiter_action" class="stack" id="form-traiter-action">
-                                <input type="hidden" name="id" value="<?= $selected['id'] ?>">
 
-                                <label><strong>Motif de l’acceptation</strong></label>
-                                <select name="motif_predefini" class="inp" required>
-                                    <option value=""> Sélectionner un motif</option>
-                                    <option value="Justificatif conforme">AUTRE</option>
-                                    <option value="Certificat médical valide">Certificat médical valide</option>
-                                    <option value="Convocation officielle">Convocation officielle</option>
-                                    <option value="Justificatif conforme">Justificatif conforme</option>
-                                    <option value="Raisons familiales">Force majeure</option>
-                                </select>
-                                <textarea
-                                        name="commentaire_acceptation"
-                                        class="inp"
-                                        rows="2"
-                                        placeholder="Commentaire optionnel"
-                                ></textarea>
+                        <?php if (($selected['action'] ?? '') !== 'DEMANDE_PRECISIONS'): ?>
+                        <form method="post" action="index.php?page=traiter_action" id="form-traiter-action">
+                            <div class="detail-actions stack">
+                                <div>
+                                    <input type="hidden" name="main_id" value="<?= $selected['id'] ?>">
+                                    <input type="hidden" name="etudiant_id" value="<?= $selected['etudiant_id'] ?>">
+                                    <input type="hidden" name="date_debut_demande" value="<?= $selected['date_debut_demande'] ?>">
+                                    <input type="hidden" name="date_fin_demande" value="<?= $selected['date_fin_demande'] ?>">
 
-                                <button class="btn primary" name="action" value="ACCEPTATION">
-                                    Accepter
-                                </button>
-                            </form>
+                                    <label><strong>Motif de l’acceptation</strong></label>
+                                    <select name="motif_accept" class="inp">
+                                        <option value=""> Sélectionner un motif</option>
+                                        <option value="Justificatif conforme">AUTRE</option>
+                                        <option value="Certificat médical valide">Certificat médical valide</option>
+                                        <option value="Convocation officielle">Convocation officielle</option>
+                                        <option value="Justificatif conforme">Justificatif conforme</option>
+                                        <option value="Raisons familiales">Force majeure</option>
+                                    </select>
+                                    <textarea
+                                            name="commentaire_acceptation"
+                                            class="inp"
+                                            rows="2"
+                                            placeholder="Commentaire optionnel"
+                                            style="box-sizing: border-box"
+                                    ></textarea>
 
-
-                            <form method="post" action="index.php?page=traiter_action" class="stack" id="form-rejet">
-                                <input type="hidden" name="id" value="<?= $selected['id'] ?>">
-                                <label><strong>Motif du rejet</strong></label>
-                                <select name="motifDecision" class="inp" required>
-                                    <option value="">Sélectionner un motif</option>
-                                    <option value="AUTRE">AUTRE</option>
-                                    <option value="Justificatif illisible">Justificatif illisible</option>
-                                    <option value="Motif non recevable">Motif non recevable</option>
-                                </select>
-
-                                <textarea
-                                        name="commentaire_rejet"
-                                        class="inp textarea-fixed"
-                                        rows="2"
-                                        placeholder="Commentaire optionnel"
-                                ></textarea>
-                                <button class="btn danger" name="action" value="REJET">
-                                    Rejeter
-                                </button>
-                            </form>
+                                    <button  class="btn primary" name="action" value="ACCEPTATION">
+                                        Accepter
+                                    </button>
+                                </div>
 
 
-                        </div>
+                                <div>
+                                    <input type="hidden" name="main_id" value="<?= $selected['id'] ?>">
+                                    <input type="hidden" name="etudiant_id" value="<?= $selected['etudiant_id'] ?>">
+                                    <input type="hidden" name="date_debut_demande" value="<?= $selected['date_debut_demande'] ?>">
+                                    <input type="hidden" name="date_fin_demande" value="<?= $selected['date_fin_demande'] ?>">
+                                    <label><strong>Motif du rejet</strong></label>
+                                    <select name="motif_refus" class="inp">
+                                        <option value="">Sélectionner un motif</option>
+                                        <option value="AUTRE">AUTRE</option>
+                                        <option value="Justificatif illisible">Justificatif illisible</option>
+                                        <option value="Motif non recevable">Motif non recevable</option>
+                                    </select>
+
+                                    <textarea
+                                            name="commentaire_rejet"
+                                            class="inp textarea-fixed"
+                                            rows="2"
+                                            placeholder="Commentaire optionnel"
+                                            style="box-sizing: border-box"
+                                    ></textarea>
+                                    <button class="btn danger" name="action" value="REJET">
+                                        Rejeter
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </section>
@@ -410,20 +457,47 @@ class IndexView {
         <script>
             // Script pour cocher/décocher l'intégralité des absences
             const toutCocher = document.getElementById('check-all');
-            const listeSeance = document.querySelectorAll('.check-abs');
+            const checkboxes  = document.querySelectorAll('.check-abs');
 
             toutCocher.addEventListener('click', () => {
-                listeSeance.forEach((c) => {
+                checkboxes.forEach((c) => {
                     c.checked = toutCocher.checked;
                 })
             })
 
             // Envoyer le choix des cours sélectionnés
-            const formulaireAccepter = document.getElementById('form-traiter-action');
-            const formulaireRefuser = document.getElementById('form-rejet');
+            const form = document.getElementById('form-traiter-action');
 
-            function cloneCheckboxes(form) {
-                listeSeance.forEach(cb => {
+            const selectMotifAccept = document.querySelector('[name="motif_accept"]');
+            const selectMotifRefus  = document.querySelector('[name="motif_refus"]');
+
+            form.addEventListener('submit', (e) => {
+                const action = document.activeElement?.value;
+                const total = checkboxes.length;
+                const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+
+                if (action === 'ACCEPTATION') {
+                    if(checked > 0 && !selectMotifAccept.value) {
+                        e.preventDefault();
+                        alert("Veuillez ajouter un motif d'acceptation")
+                    }
+                    else if(total !== checked && !selectMotifRefus.value) {
+                        e.preventDefault();
+                        alert('Veuillez ajouter un motif de refus');
+                    }
+                }
+                else {
+                    if(checked > 0 && !selectMotifRefus.value) {
+                        e.preventDefault()
+                        alert('Veuillez ajouter un motif de refus')
+                    }
+                    else if(total !== checked && !selectMotifAccept.value) {
+                        e.preventDefault()
+                        alert("Veuillez ajouter un motif d'acceptation")
+                    }
+                }
+
+                checkboxes.forEach(cb => {
                     if(cb.checked) {
                         const input = document.createElement('input');
                         input.type = 'hidden';
@@ -432,10 +506,7 @@ class IndexView {
                         form.appendChild(input);
                     }
                 });
-            }
-
-            formulaireAccepter.addEventListener('submit', () => cloneCheckboxes(formulaireAccepter));
-            formulaireRefuser.addEventListener('submit', () => cloneCheckboxes(formulaireRefuser));
+            });
         </script>
         </body>
         </html>

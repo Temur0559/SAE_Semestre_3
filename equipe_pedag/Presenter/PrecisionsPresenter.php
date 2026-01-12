@@ -27,7 +27,7 @@ class PrecisionsPresenter {
         // données envoyées par le formulaire
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $messagePrecisions = trim($_POST['message'] ?? '');
-        $idAuteur = 3;   // responsable connecté (à améliorer plus tard)
+        $idAuteur = $_SESSION['user']['id'];   // responsable connecté (à améliorer plus tard)
 
         if ($idJustificatif <= 0) {
             header('Location: index.php');

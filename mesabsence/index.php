@@ -1,13 +1,19 @@
 <?php
 declare(strict_types=1);
 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../connexion/config/session.php'; // ✅ Au lieu de session_start()
 require_once __DIR__ . '/../connexion/Presenter/require_role.php';
 require_once __DIR__ . '/Model/AbsenceModel.php';
 
 require_role('ETUDIANT');
 
-
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 
 $userId = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : 0;
