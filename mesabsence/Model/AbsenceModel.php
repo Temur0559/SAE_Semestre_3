@@ -184,15 +184,14 @@ final class AbsenceModel
     public static function insertJustificatif($absenceId, $userId, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '')
     {
         $pdo = db();
-        $pdo->beginTransaction();
+
         try {
             $st = $pdo->prepare("
-                INSERT INTO Justificatif (fichier, commentaire, id_utilisateur, nom_fichier_original, type_mime, motif_libre)
-                VALUES (decode(:f, 'base64'), :comm, :u, :n, :m, :motifL)
-                RETURNING id
-            ");
+            INSERT INTO Justificatif (fichier, commentaire, id_utilisateur, nom_fichier_original, type_mime, motif_libre)
+            VALUES (decode(:f, 'base64'), :comm, :u, :n, :m, :motifL)
+            RETURNING id
+        ");
 
-            // Encoder le contenu binaire en base64 pour éviter les problèmes d'encodage
             $st->bindValue(':f', base64_encode($binaryContent), \PDO::PARAM_STR);
             $st->bindValue(':comm', $commentaire, \PDO::PARAM_STR);
             $st->bindValue(':u', $userId, \PDO::PARAM_INT);
@@ -200,30 +199,15 @@ final class AbsenceModel
             $st->bindValue(':m', $mime, \PDO::PARAM_STR);
             $st->bindValue(':motifL', $motifLibre, \PDO::PARAM_STR);
             $st->execute();
-            $jid = (int)$st->fetchColumn();
 
-            $st2 = $pdo->prepare("INSERT INTO JustificatifAbsence (id_justificatif, id_absence) VALUES (:j,:a)");
-            $st2->execute([':j'=>$jid, ':a'=>$absenceId]);
+            return (int)$st->fetchColumn();
 
-            $historiqueMotif = 'Soumission initiale par l\'étudiant';
-            $st3 = $pdo->prepare("
-                INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision)
-                VALUES ('SOUMISSION', :j, :u, :motif_hist)
-            ");
-            $st3->execute([
-                ':j' => $jid,
-                ':u' => $userId,
-                ':motif_hist' => $historiqueMotif
-            ]);
-
-            $st4 = $pdo->prepare("UPDATE Absence SET justification = 'INCONNU' WHERE id = :a");
-            $st4->execute([':a' => $absenceId]);
-
-            $pdo->commit();
-            return $jid;
         } catch (\Throwable $e) {
-            $pdo->rollBack();
-            throw $e;
+            echo "<h1>ERREUR SQL RÉELLE (insertJustificatif)</h1>";
+            echo "<pre>";
+            var_dump($e->getMessage());
+            echo "</pre>";
+            die();
         }
     }
 
@@ -253,7 +237,7 @@ final class AbsenceModel
 
     public static function insertDemandeJustification($userId, string $dateDebut, string $dateFin, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '') {
         $pdo = db();
-        $pdo->beginTransaction();
+        //$pdo->beginTransaction();
 
         // On force l'affichage des erreurs pour ce bloc
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
@@ -267,11 +251,15 @@ final class AbsenceModel
             $st = $pdo->prepare($sql);
 
 
-            $st->bindValue(':f', $binaryContent, $binaryContent === null ? \PDO::PARAM_NULL : \PDO::PARAM_LOB);
+            $st->bindValue(
+                ':f',
+                $binaryContent === null ? '' : $binaryContent,
+                \PDO::PARAM_LOB);
             $st->bindValue(':comm', $commentaire);
             $st->bindValue(':u', (int)$userId, \PDO::PARAM_INT);
-            $st->bindValue(':n', $originalName);
-            $st->bindValue(':m', $mime);
+            $st->bindValue(':n', $originalName ?? 'DECLARATION_SANS_FICHIER');
+            $st->bindValue(':m', $mime ?? 'text/plain');
+
             $st->bindValue(':motifL', $motifLibre);
             $st->bindValue(':dd', $dateDebut);
             $st->bindValue(':df', $dateFin);
@@ -279,15 +267,32 @@ final class AbsenceModel
             $st->execute();
             $jid = (int)$st->fetchColumn();
 
+
+            $action = 'SOUMISSION';
+
+            $allowedActions = [
+                'SOUMISSION',
+                'DEMANDE_PRECISIONS',
+                'RENVOI_FICHIER',
+                'ACCEPTATION',
+                'REJET',
+                'AUTORISATION_RENVOI',
+                'AUTORISATION_HORS_DELAI'
+            ];
+
+            if (!in_array($action, $allowedActions, true)) {
+                throw new Exception("Action ENUM invalide pour HistoriqueDecision : " . $action);
+            }
+
             // 2. Insertion Historique (séparée)
-            $sqlHist = "INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision) VALUES ('SOUMISSION', ?, ?, ?)";
-            $pdo->prepare($sqlHist)->execute([$jid, $userId, "Déclaration du $dateDebut au $dateFin"]);
+            $sqlHist = "INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision)
+            VALUES (?, ?, ?, ?)";
+            $pdo->prepare($sqlHist)->execute([$action, $jid, $userId, "Déclaration du $dateDebut au $dateFin"]);
 
             // 3. Liaison (uniquement si le reste a marché)
             // On commente la liaison pour vérifier si l'insertion de base fonctionne enfin
             self::linkJustificatifToAbsences($jid, $userId, $dateDebut, $dateFin);
 
-            $pdo->commit();
 
             return $jid;
 
@@ -295,7 +300,7 @@ final class AbsenceModel
             // Si ça rate, on arrête tout et on affiche l'erreur en GROS
             echo "<h1>ERREUR SQL DETECTEE</h1>";
             echo "<pre>" . $e->getMessage() . "</pre>";
-            $pdo->rollBack();
+
             die();
         }
     }
