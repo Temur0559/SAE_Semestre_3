@@ -447,10 +447,8 @@ final class AbsenceModel
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-
     public static function getAbsencesForReturnReminder(): array
     {
-
         return [];
     }
 }
