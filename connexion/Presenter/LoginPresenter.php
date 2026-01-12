@@ -2,19 +2,22 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../Model/UserModel.php';
 require_once __DIR__ . '/../config/session.php';
+
 final class LoginPresenter {
+    // Gère l'affichage de la vue du login
     public function handleLogin(string $email, string $password) {
 
 
         if (!isset($_POST['csrf'], $_SESSION['csrf']) || $_POST['csrf'] !== $_SESSION['csrf']) {
             header('Location: View/login_fr.php?err=csrf'); exit;
         }
+        // si pas de mail ou mot de passe, afficher la vue login
         if ($email === '' || $password === '') {
             header('Location: View/login_fr.php?err=empty'); exit;
         }
 
-
         $user = UserModel::authenticate($email, $password);
+        // Si aucun user correspond aux identifiant, afficher la vue login avec une erreur
         if (!$user) {
             $u = UserModel::findByEmail($email);
             header('Location: View/login_fr.php?err=' . ($u ? 'badpass' : 'nouser')); exit;
@@ -26,26 +29,24 @@ final class LoginPresenter {
             $identifiant = substr($identifiant, 0, $pos);
         }
 
-        // Remplit les clés que les dashboards lisent
+        // Remplir les informations dans la session
         $_SESSION['identifiant'] = $identifiant;
-        $_SESSION['role']        = $user['role'];
-
-        // copie complète si besoin ailleurs
+        $_SESSION['role'] = $user['role'];
         $_SESSION['user'] = [
-            'id'     => (int)$user['id'],
-            'email'  => $user['email'],
-            'nom'    => $user['nom'],
+            'id' => (int)$user['id'],
+            'email' => $user['email'],
+            'nom' => $user['nom'],
             'prenom' => $user['prenom'],
-            'role'   => $user['role'],
+            'role' => $user['role'],
         ];
 
         // Redirection par rôle  tout dans connexion/View/
         switch ($user['role']) {
-            case 'ETUDIANT':    header('Location: View/dashboard_etudiant_fr.php');   break;
-            case 'ENSEIGNANT':  header('Location: View/dashboard_enseignant.php'); break;
+            case 'ETUDIANT': header('Location: View/dashboard_etudiant_fr.php'); break;
+            case 'ENSEIGNANT': header('Location: View/dashboard_enseignant.php'); break;
             case 'RESPONSABLE': header('Location: View/dashboard_responsable.php');break;
-            case 'SECRETAIRE':  header('Location: View/dashboard_secretaire.php'); break;
-            default:            header('Location: View/login_fr.php');               break;
+            case 'SECRETAIRE': header('Location: View/dashboard_secretaire.php'); break;
+            default: header('Location: View/login_fr.php'); break;
         }
         exit;
     }

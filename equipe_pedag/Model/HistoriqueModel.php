@@ -8,7 +8,7 @@ class HistoriqueModel {
         $this->pdo = $pdo;
     }
 
-
+    // Construire les filtres pour les requêtes qui récupérent des informations de l'historique
     private function construireFiltres(string $filtrerTexte,string $filtrerDecision,string $filtrerDate1,string $filtrerDate2): array {
 
         $conditions = [];
@@ -47,9 +47,6 @@ class HistoriqueModel {
         return [$where, $params];
     }
 
-
-
-
     // on compte y a cmbien de lignes filtrés avec notre sélection
     public function count(string $filtrerTexte, string $filtrerDecision, string $filtrerDate1, string $filtrerDate2): int {
 
@@ -63,9 +60,7 @@ class HistoriqueModel {
         return (int) $stmt->fetchColumn();
     }
 
-
-
-
+    // Récupère les justificatifs pour les afficher dans l'historique
     public function get(string $filtrerTexte,string $filtrerDecision,string $filtrerDate1,string $filtrerDate2,int $elements,int $debut): array { // Renommé 'filtrer_pagination' en 'get' pour correspondre à l'utilisation dans HistoriquePresenter.php
 
         list($where, $params) = $this->construireFiltres($filtrerTexte, $filtrerDecision, $filtrerDate1, $filtrerDate2);

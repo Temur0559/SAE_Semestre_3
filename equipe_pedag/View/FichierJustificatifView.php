@@ -1,5 +1,6 @@
 <?php
 
+// Permet d'afficher ou de lancer le téléchargement d'un fichier
 class FichierJustificatifView {
 
     public function render(array $doc) {

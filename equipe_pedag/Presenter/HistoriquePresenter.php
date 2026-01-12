@@ -3,14 +3,12 @@
 require_once __DIR__ . '/../model/HistoriqueModel.php';
 
 class HistoriquePresenter {
-
     private PDO $pdo;
     private HistoriqueModel $modele;
     private JustificatifInfosModel $justificatifInfosModel;
 
     public function __construct() {
         $this->pdo = db();
-
 
         $this->modele = new HistoriqueModel($this->pdo);
         $this->justificatifInfosModel = new JustificatifInfosModel($this->pdo);
@@ -29,18 +27,12 @@ class HistoriquePresenter {
         $parPage = 20;
         $depart  = ($pageActuelle - 1) * $parPage;
 
-
-
-
         // recupère les infos dans Model
-        //$total  = $this->modele->count($recherche, $typeAction, $dateMin, $dateMax);
         $lignes = $this->modele->get($recherche, $typeAction, $dateMin, $dateMax, $parPage, $depart); // Remplacement de filtrer_pagination par get
         $total = count($lignes);
 
-
-
+        // Récupère pour chaque justificatif l'information de si celui-ci est composé d'absence avec des états différents
         for($i = 0; $i < count($lignes); $i++) {
-
             $listAbsences = $this->justificatifInfosModel->detailsJustificatif(
                 $lignes[$i]['etudiant_id'],
                 $lignes[$i]['date_debut_demande'],
@@ -66,8 +58,6 @@ class HistoriquePresenter {
 
         //calcul du nbre de pages total
         $nbPages = max(1, (int)ceil($total / $parPage));
-
-
 
         // appel la view
         require __DIR__ . '/../view/HistoriqueView.php';

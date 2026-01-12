@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
 
-
+// Fonction permettant de vérifier si l'utilisateur est connecté pour consulter la page
 function require_login() {
     if (empty($_SESSION['user'])) { header('Location: ../connexion/View/login_fr.php'); exit; }
 }
+// Fonction permettant de vérifier si un utilisateur a les permissions requises pour consulter la page
 function require_role() {
     $roles = func_get_args();
     require_login();

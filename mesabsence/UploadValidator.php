@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+// Vérifier la validité d'un fichier upload
+
 final class UploadValidator {
 
     // Taille maximale : 5 MB

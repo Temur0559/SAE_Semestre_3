@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../connexion/config/db.php';
 final class AbsenceModel
 {
 
+    // Récupérer les informations d'un compte utilisateur
     public static function getIdentity($userId)
     {
         $sql = "
@@ -26,16 +27,15 @@ final class AbsenceModel
         $naissance = $row['date_naissance'] ? ('Né(e) le ' . $row['date_naissance']) : 'Né(e) le —/—/—';
 
         return [
-            'nom'      => $row['nom'],
-            'prenom'   => $row['prenom'],
+            'nom' => $row['nom'],
+            'prenom' => $row['prenom'],
             'naissance'=> $naissance,
-            'ine'      => $row['ine'] ?: 'INE',
-            'program'  => $row['program'] ?? '',
+            'ine' => $row['ine'] ?: 'INE',
+            'program' => $row['program'] ?? '',
         ];
     }
 
-
-
+    // Récupérer les absences d'un étudiant
     public static function getAbsencesForStudent($userId, $filtre )
     {
         $sql = "SELECT
@@ -71,7 +71,6 @@ final class AbsenceModel
 
             $statut = 'Inconnu';
             $commentaireAfficher;
-
 
             if ($dbStatus === 'JUSTIFIEE') {
                 $statut = 'Accepté';
@@ -180,7 +179,7 @@ final class AbsenceModel
         return $out;
     }
 
-
+    // Insérer un justificatif
     public static function insertJustificatif($absenceId, $userId, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '')
     {
         $pdo = db();
@@ -211,7 +210,7 @@ final class AbsenceModel
         }
     }
 
-
+    // récupérer le fichier associé a un justificatif
     public static function getJustificatifFile($justifId)
     {
         // Récupérer le fichier encodé en base64 depuis PostgreSQL
@@ -235,6 +234,7 @@ final class AbsenceModel
         return $j;
     }
 
+    // Créer un nouveau justificatif et le liant a ses absences
     public static function insertDemandeJustification($userId, string $dateDebut, string $dateFin, $originalName, $mime, $binaryContent, string $commentaire = '', string $motifLibre = '') {
         $pdo = db();
         //$pdo->beginTransaction();
@@ -250,15 +250,14 @@ final class AbsenceModel
 
             $st = $pdo->prepare($sql);
 
-
             $st->bindValue(
                 ':f',
                 $binaryContent === null ? '' : $binaryContent,
                 \PDO::PARAM_LOB);
             $st->bindValue(':comm', $commentaire);
             $st->bindValue(':u', (int)$userId, \PDO::PARAM_INT);
-            $st->bindValue(':n', $originalName ?? 'DECLARATION_SANS_FICHIER');
-            $st->bindValue(':m', $mime ?? 'text/plain');
+            $st->bindValue(':n', $originalName);
+            $st->bindValue(':m', $mime);
 
             $st->bindValue(':motifL', $motifLibre);
             $st->bindValue(':dd', $dateDebut);
@@ -267,22 +266,7 @@ final class AbsenceModel
             $st->execute();
             $jid = (int)$st->fetchColumn();
 
-
             $action = 'SOUMISSION';
-
-            $allowedActions = [
-                'SOUMISSION',
-                'DEMANDE_PRECISIONS',
-                'RENVOI_FICHIER',
-                'ACCEPTATION',
-                'REJET',
-                'AUTORISATION_RENVOI',
-                'AUTORISATION_HORS_DELAI'
-            ];
-
-            if (!in_array($action, $allowedActions, true)) {
-                throw new Exception("Action ENUM invalide pour HistoriqueDecision : " . $action);
-            }
 
             // 2. Insertion Historique (séparée)
             $sqlHist = "INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision)
@@ -290,9 +274,7 @@ final class AbsenceModel
             $pdo->prepare($sqlHist)->execute([$action, $jid, $userId, "Déclaration du $dateDebut au $dateFin"]);
 
             // 3. Liaison (uniquement si le reste a marché)
-            // On commente la liaison pour vérifier si l'insertion de base fonctionne enfin
             self::linkJustificatifToAbsences($jid, $userId, $dateDebut, $dateFin);
-
 
             return $jid;
 
@@ -305,6 +287,7 @@ final class AbsenceModel
         }
     }
 
+    // Récupération des absences entre un période spécifique pour un utilisateur
     public static function getAbsenceForUserBetweenPeriod(int $userId, string $dateDebut, string $dateFin): array {
         $pdo = db();
 
@@ -328,6 +311,7 @@ final class AbsenceModel
         return $st->fetchAll(\PDO::FETCH_COLUMN);
     }
 
+    // Lié les absences a un justificatif
     public static function linkJustificatifToAbsences(int $justifId, int $userId, string $dateDebut, string $dateFin): int {
         $ids = self::getAbsenceForUserBetweenPeriod($userId, $dateDebut, $dateFin);
 
@@ -367,63 +351,6 @@ final class AbsenceModel
 
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }
-
-
-    public static function logRpDecision(int $justifId, int $rpId, string $action, string $motif): bool
-    {
-        $pdo = db();
-        $pdo->beginTransaction();
-
-        try {
-            // 1. Loguer la nouvelle décision
-            $st_log = $pdo->prepare("
-                INSERT INTO HistoriqueDecision (action, id_justificatif, id_auteur, motif_decision)
-                VALUES (:action, :j, :auteur, :motif_decision)
-            ");
-            $st_log->execute([
-                ':action'         => $action,
-                ':j'              => $justifId,
-                ':auteur'         => $rpId,
-                ':motif_decision' => $motif
-            ]);
-
-            // 2. Mettre à jour le statut 'justification' de l'Absence
-            $newJustifStatus = match ($action) {
-                'ACCEPTATION' => 'JUSTIFIEE',
-                'REJET' => 'NON_JUSTIFIEE',
-                // DEMANDE_PRECISIONS, AUTORISATION_RENVOI, etc. conservent un statut INCONNU pour l'étudiant
-                default => 'INCONNU',
-            };
-
-            // Appliquer le statut à toutes les absences liées à ce justificatif
-            $st_update_abs = $pdo->prepare("
-                UPDATE Absence a
-                SET justification = :new_status
-                FROM JustificatifAbsence ja
-                WHERE ja.id_absence = a.id AND ja.id_justificatif = :j
-            ");
-            $st_update_abs->execute([':new_status' => $newJustifStatus, ':j' => $justifId]);
-
-            // 3. Gestion du verrouillage (US4)
-            if ($action === 'DEMANDE_PRECISIONS' || $action === 'AUTORISATION_RENVOI' || $action === 'AUTORISATION_HORS_DELAI') {
-                // Déverrouiller/Autoriser le renvoi
-                $st_unlock = $pdo->prepare("UPDATE Justificatif SET verouille = FALSE, verouille_date = NULL WHERE id = :j");
-                $st_unlock->execute([':j' => $justifId]);
-            } else {
-                // Verrouiller (car traité ou soumis sans nécessité de renvoi)
-                $st_lock = $pdo->prepare("UPDATE Justificatif SET verouille = TRUE, verouille_date = NOW() WHERE id = :j");
-                $st_lock->execute([':j' => $justifId]);
-            }
-
-            $pdo->commit();
-            return true;
-
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            throw new \Exception("Erreur de log de décision RP: " . $e->getMessage(), 0, $e);
-        }
-    }
-
 
     public static function getAbsencesForInitialReminder(): array
     {

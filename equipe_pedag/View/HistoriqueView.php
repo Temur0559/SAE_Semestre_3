@@ -8,24 +8,24 @@ class HistoriqueView {
 
     private function action_label($a) {
         return match($a){
-            'SOUMISSION'               => 'Soumission',
-            'DEMANDE_PRECISIONS'       => 'Demande de précisions',
-            'RENVOI_FICHIER'           => 'Renvoi de fichier',
-            'ACCEPTATION'              => 'Acceptation',
-            'REJET'                    => 'Rejet',
-            'AUTORISATION_RENVOI'      => 'Autorisation de renvoi',
-            'AUTORISATION_HORS_DELAI'  => 'Autorisation hors délai',
-            default                    => $a,
+            'SOUMISSION' => 'Soumission',
+            'DEMANDE_PRECISIONS' => 'Demande de précisions',
+            'RENVOI_FICHIER' => 'Renvoi de fichier',
+            'ACCEPTATION' => 'Acceptation',
+            'REJET' => 'Rejet',
+            'AUTORISATION_RENVOI' => 'Autorisation de renvoi',
+            'AUTORISATION_HORS_DELAI' => 'Autorisation hors délai',
+            default => $a,
         };
     }
 
     private function action_badge($a) {
         $k = match($a){
-            'ACCEPTATION'                          => 'status-valide',
-            'REJET'                                => 'status-rejete',
-            'DEMANDE_PRECISIONS','RENVOI_FICHIER'  => 'status-revision',
-            'SOUMISSION'                           => 'status-attente',
-            default                                => '',
+            'ACCEPTATION' => 'status-valide',
+            'REJET' => 'status-rejete',
+            'DEMANDE_PRECISIONS','RENVOI_FICHIER' => 'status-revision',
+            'SOUMISSION' => 'status-attente',
+            default => '',
         };
         // On utilise tes labels mais avec les classes CSS du nouveau design
         return '<span class="status-badge '.$k.'">'.$this->propre($this->action_label($a)).'</span>';
@@ -36,13 +36,13 @@ class HistoriqueView {
         require_once __DIR__ . '/../../connexion/config/base_path.php';
         $identifiant = isset($_SESSION['identifiant']) ? htmlspecialchars($_SESSION['identifiant'], ENT_QUOTES, 'UTF-8') : 'Utilisateur';
 
-        $rows  = $d['rows'];
-        $page  = $d['page'];
+        $rows = $d['rows'];
+        $page = $d['page'];
         $pages = $d['pages'];
-        $q     = $this->propre($d['q']);
-        $action= $this->propre($d['action']);
-        $from  = $this->propre($d['from']);
-        $to    = $this->propre($d['to']);
+        $qn = $this->propre($d['q']);
+        $action = $this->propre($d['action']);
+        $from = $this->propre($d['from']);
+        $to = $this->propre($d['to']);
         ?>
         <!doctype html>
         <html lang="fr">
@@ -181,12 +181,13 @@ class HistoriqueView {
 
             <h1>Historique des décisions</h1>
 
+            <!-- systeme de filtre -->
             <form class="filters-zone" method="get">
                 <input type="hidden" name="page" value="historique">
 
                 <div>
                     <label>Nom / prénom</label>
-                    <input type="text" name="q" value="<?=$q?>" placeholder="Rechercher...">
+                    <input type="text" name="q" value="<?=$qn?>" placeholder="Rechercher...">
                 </div>
 
                 <div>
@@ -216,6 +217,7 @@ class HistoriqueView {
                 </div>
             </form>
 
+            <!-- liste des justificatifs -->
             <table class="justif-table">
                 <thead>
                 <tr>
@@ -226,6 +228,7 @@ class HistoriqueView {
                 </tr>
                 </thead>
                 <tbody>
+                <!-- Ligne d'un justificatif -->
                 <?php foreach($rows as $r): ?>
                     <tr>
                         <td style="font-size: 0.85rem;">

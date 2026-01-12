@@ -15,16 +15,10 @@ class RevenirDecisionPresenter {
 
     public function handle() {
 
-        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
-
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: historique.php');
             exit;
         }
-
-
-
 
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $nouvelleAction = $_POST['action'] ?? '';
@@ -47,7 +41,6 @@ class RevenirDecisionPresenter {
             ($motif !== '' ? $motif : null),
             $idAuteur
         );
-
 
         if (in_array($nouvelleAction, [
             'DEMANDE_PRECISIONS',

@@ -33,11 +33,11 @@ class IndexView {
         if (!function_exists('statut_label')){
             function statut_label(string $k): string {
                 return match($k){
-                    'accepte'     => 'Accepté',
-                    'rejete'      => 'Rejeté',
-                    'en_attente'  => 'En attente',
+                    'accepte' => 'Accepté',
+                    'rejete' => 'Rejeté',
+                    'en_attente' => 'En attente',
                     'en_revision' => 'En révision',
-                    default       => '—',
+                    default => '—',
                 };
         }
 
@@ -210,6 +210,7 @@ class IndexView {
         </header>
 
         <div class="main-container">
+            <!-- Filtre par étudiant -->
             <aside class="pane" style="min-width: 0">
                 <div class="pane-title">Informations étudiant</div>
 
@@ -238,6 +239,7 @@ class IndexView {
                     <a href="index.php?page=historique">📂 Consulter l'historique</a>
                 </nav>
 
+                <!-- onglet en attente / revision -->
                 <div class="tabs">
                     <?php
                     $tabs = ['en_attente' => 'En attente', 'en_revision' => 'En révision'];
@@ -251,6 +253,7 @@ class IndexView {
                     <?php endforeach; ?>
                 </div>
 
+                <!-- Liste des justificatifs -->
                 <table class="justif-table">
                     <thead>
                     <tr>
@@ -282,6 +285,7 @@ class IndexView {
                     </tbody>
                 </table>
 
+                <!-- Détail du justificatif selectionné -->
                 <?php if($selected): ?>
                     <div class="detail-pane">
                         <h3>Détails du justificatif</h3>
@@ -318,8 +322,6 @@ class IndexView {
                                 </button>
                             </form>
                         <?php endif; ?>
-
-
 
                         <?php if (!empty($details)): ?>
                             <div style="margin-top:20px;">
@@ -476,7 +478,11 @@ class IndexView {
                 const total = checkboxes.length;
                 const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
 
-                if (action === 'ACCEPTATION') {
+                if(checked === 0) {
+                    e.preventDefault()
+                    alert("Veuillez selectionner au moins un cours ci-dessous")
+                }
+                else if (action === 'ACCEPTATION') {
                     if(checked > 0 && !selectMotifAccept.value) {
                         e.preventDefault();
                         alert("Veuillez ajouter un motif d'acceptation")

@@ -3,7 +3,6 @@
 require_once __DIR__ . '/../model/ActionModel.php';
 
 class PrecisionsPresenter {
-
     private PDO $pdo;
     private ActionModel $actionModel;
 
@@ -15,14 +14,11 @@ class PrecisionsPresenter {
 
     public function handle() {
 
-        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
-
         // accepte uniquement POST
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php');
             exit;
         }
-
 
         // données envoyées par le formulaire
         $idJustificatif = (int)($_POST['id'] ?? 0);
@@ -42,7 +38,7 @@ class PrecisionsPresenter {
         $this->actionModel->ajouter_decision(
             $idJustificatif,'DEMANDE_PRECISIONS',$messagePrecisions,$idAuteur);
 
-        // deverrouiller le justificatif pour permettre renvoi
+        // deverrouiller le justificatif pour permettre le renvoi
         $this->actionModel->deverouille($idJustificatif);
 
         // redirection

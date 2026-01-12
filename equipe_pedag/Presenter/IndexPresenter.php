@@ -8,16 +8,11 @@ class IndexPresenter {
     private JustificatifInfosModel $model;
 
     public function __construct(PDO $pdo) {
-
-
         $this->pdo = $pdo;
-
         $this->model = new JustificatifInfosModel($this->pdo);
     }
 
     public function handle() {
-
-
         $rowsAll = $this->model->AbsencesDetails();
         $filtreNom    = trim($_GET['nom'] ?? '');
         $filtrePrenom = trim($_GET['prenom'] ?? '');
@@ -30,7 +25,6 @@ class IndexPresenter {
 
         // stock le resultat du filtre
         $justificatifsFiltres = [];
-
 
         foreach ($rowsAll as $ligne) {
 
@@ -50,7 +44,6 @@ class IndexPresenter {
             if ($statut === $ongletActif) {
                 $justificatifsFiltres[] = $ligne;
             }
-
         }
 
         // sélection d'un justificatif (au lieu de l'absence pour gérer les plages)
@@ -70,17 +63,16 @@ class IndexPresenter {
             $details = $this->model->detailsJustificatif($selected['etudiant_id'], $selected['date_debut_demande'], $selected['date_fin_demande']);
         }
 
-        //echo "<pre>"; var_export($details); echo "</pre>";
-
         require_once __DIR__ . '/../View/index.php';
         $view = new IndexView();
         $view->render($justificatifsFiltres, $compteurs, $ongletActif, $selected, $details);
     }
 
+    // Définition des correspondances entre une actions et son statut
     private function action_en_statut(?string $action): string {
         return match($action){
             'ACCEPTATION' => 'accepte',
-            'REJET'       => 'rejete',
+            'REJET' => 'rejete',
             'DEMANDE_PRECISIONS',
             'RENVOI_FICHIER',
             'AUTORISATION_RENVOI' => 'en_revision',

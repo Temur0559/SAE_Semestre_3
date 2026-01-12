@@ -3,7 +3,6 @@
 require_once __DIR__ . '/../model/FichierJustificatifModel.php';
 
 class FichierJustificatifPresenter {
-
     private PDO $pdo;
     private FichierJustificatifModel $model;
 

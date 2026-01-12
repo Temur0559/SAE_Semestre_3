@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+// Upload un fichier, quand l'étudiant en fournis un nouveau (Demande de précision, insertion dévérouillée)
+
 require_once __DIR__ . '/../connexion/config/session.php';
 require_once __DIR__ . '/../connexion/config/db.php';
 require_once __DIR__ . '/../connexion/Presenter/require_role.php';
@@ -18,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $userId = $_SESSION['user']['id'] ?? 0;
 $justificatifId = (int)$_POST['justificatif_id'] ?? -1;
 
-// MODIFICATION : On accepte si on a un justificatif à mettre à jour
+// On accepte si on a un justificatif à mettre à jour
 if($justificatifId <= 0 || !isset($_FILES['justificatif'])) {
     header('Location: index.php?err=missing');
     exit;

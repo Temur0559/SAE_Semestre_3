@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+
+// Script pour déconnecter un utilisateur
+
 session_start();
 $_SESSION = [];
 if (ini_get('session.use_cookies')) {

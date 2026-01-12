@@ -2,9 +2,10 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../config/db.php';
 
+// Permet de récupérer des informations relatives aux comptes utilisateurs
 final class UserModel {
 
-
+    // Récupérer les informations d'un compte utilisateur grace à son email
     public static function findByEmail(string $email) {
 
         $sql = "SELECT
@@ -21,7 +22,8 @@ final class UserModel {
         return $u ?: null;
     }
 
-
+    // Prend en paramètre un email et un mot de passe, renvoie les informations de
+    // l'utilisateur si ils sont valides
     public static function authenticate(string $email, string $password) {
         $user = self::findByEmail($email);
         if (!$user) return null;

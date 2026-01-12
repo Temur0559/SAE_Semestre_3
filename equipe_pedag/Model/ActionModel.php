@@ -2,7 +2,6 @@
 
 class ActionModel
 {
-
     private PDO $pdo;
 
     public function __construct(PDO $pdo)
@@ -10,10 +9,9 @@ class ActionModel
         $this->pdo = $pdo;
     }
 
-
+    // Ajouter une décision à un justificatif + insertion dans l'historique
     public function ajouter_decision(int $justifId, string $action, ?string $motif, int $auteur): void
     {
-
         $sql = "INSERT INTO HistoriqueDecision (action, motif_decision, id_justificatif, id_auteur) VALUES (:action, :motif, :justif, :auteur)";
 
         $st = $this->pdo->prepare($sql);
@@ -25,50 +23,50 @@ class ActionModel
         ]);
     }
 
-
-    // pour deverouille un justificatif 
-
+    // pour deverouille un justificatif
     public function deverouille(int $id)
     {
-
         $sql = "UPDATE Justificatif SET verouille = FALSE, verouille_date = NULL, date_maj = NOW() WHERE id = :id"; // CORRIGÉ
         $st = $this->pdo->prepare($sql);
         $st->execute([':id' => $id]);
     }
 
-
     // pour verrouiller un justificatif (Ajouté)
-
     public function verrouiller(int $id)
     {
-
         $sql = "UPDATE Justificatif SET verouille = TRUE, verouille_date = NOW(), date_maj = NOW() WHERE id = :id"; // CORRIGÉ
         $st = $this->pdo->prepare($sql);
         $st->execute([':id' => $id]);
     }
 
-
-    // marque une absence justifiée quand on l'accepte dans la bdd (Renommée en marquer_absence_justifiee)
+    // Change l'état des absences d'un justificatif
     public function marquer_absence_justifiee(int $justifId, $etat)
-    { // RENOMMÉ
-
+    {
         $sql = "SELECT JustificatifAbsence.id_absence FROM JustificatifAbsence WHERE JustificatifAbsence.id_justificatif = :id";
 
         $st = $this->pdo->prepare($sql);
         $st->execute([':id' => $justifId]);
 
-        $abs = $st->fetch();
+        $abs = $st->fetchAll();
 
         if (!$abs) {
             return;
         }
 
-        $sql2 = "UPDATE Absence SET justification = :etat, commentaire = NULL WHERE id = :id";
+        $valeurs = implode(',', array_fill(0, count($abs), '?'));
+
+        $params = [$etat];
+        foreach ($abs as $a) {
+            $params[] = $a['id_absence'];
+        }
+
+        $sql2 = "UPDATE Absence SET justification = ?, commentaire = NULL WHERE id in ($valeurs)";
 
         $st2 = $this->pdo->prepare($sql2);
-        $st2->execute([':id' => $abs['id_absence'], ':etat' => $etat]);
+        $st2->execute($params);
     }
 
+    // Change l'état des absences spécifier, avec un motif et commentaire
     public function marquer_absence(array $idsAbsence, $etat, $motif, $commentaire) {
         $etatValide = ['JUSTIFIEE', 'NON_JUSTIFIEE'];
 
@@ -126,6 +124,7 @@ class ActionModel
         $st->execute();
     }
 
+    // crée une copie d'un justuficatif et renvoie l'id de cette copie
     public function cloneJustificatif($id) {
         $sql = "INSERT INTO justificatif (fichier, commentaire, motif_libre, id_utilisateur, nom_fichier_original, type_mime, verouille_date, date_debut_demande, date_fin_demande)
                 (
@@ -141,6 +140,7 @@ class ActionModel
         return $st->fetch()['id'];
     }
 
+    // Déplacer les absences dans un autre justificatif
     public function deplacerAbsenceJustificatifs($nonSelectionnes, $idJustificatif, $motif, $commentaire, $actuelID) {
         if (empty($nonSelectionnes)) {
             return;
@@ -161,5 +161,4 @@ class ActionModel
 
         $st->execute($params);
     }
-
 }

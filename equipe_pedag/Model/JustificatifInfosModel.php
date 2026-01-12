@@ -51,6 +51,8 @@ class JustificatifInfosModel {
 
         return $this->pdo->query($sql)->fetchAll();
     }
+
+    // Récupère les fichiers et la liste d'absence pour un justificatif
     public function detailsJustificatif(int $id_utilisateur, $dateDebut, $dateFin): array
     {
         $sql = "SELECT DISTINCT 
@@ -105,8 +107,6 @@ class JustificatifInfosModel {
             'listFichiers' => $listFichiers
         ];
     }
-
-
 
     // récupère un justificatif par son id
     public function justificatif_id(int $id): ?array {

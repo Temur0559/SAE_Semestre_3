@@ -15,14 +15,10 @@ class RejetPresenter {
 
     public function handle() {
 
-        // session_start(); // CORRIGÉ: Appel déplacé dans index.php
-
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php');
             exit;
         }
-
 
         $idJustificatif = (int)($_POST['id'] ?? 0);
         $motif = trim($_POST['motifDecision'] ?? '');
